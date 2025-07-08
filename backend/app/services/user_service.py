@@ -3,9 +3,17 @@ from typing import Optional
 from uuid import uuid4
 from datetime import datetime
 from neo4j import Transaction
+import neo4j.time
 
 from app.models.schemas import UserCreate, UserResponse, UserRole
 from app.database.connection import get_db
+
+def safe_convert_datetime(obj):
+    """Convertir les DateTime Neo4j en datetime Python"""
+    if isinstance(obj, neo4j.time.DateTime):
+        return obj.to_native()
+    else:
+        return obj
 
 class UserService:
     def __init__(self):
@@ -45,12 +53,13 @@ class UserService:
         with self.db.driver.session() as session:
             user_node = session.execute_write(create_user_tx)
             
+            # Convertir les dates Neo4j AVANT de créer UserResponse
             return UserResponse(
                 id=user_node['id'],
                 username=user_node['username'],
                 email=user_node['email'],
                 role=UserRole(user_node['role']),
-                created_at=user_node['created_at']
+                created_at=safe_convert_datetime(user_node['created_at'])  # CONVERSION ICI
             )
     
     async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
@@ -73,7 +82,7 @@ class UserService:
                 username=user_data['username'],
                 email=user_data['email'],
                 role=UserRole(user_data['role']),
-                created_at=user_data['created_at']
+                created_at=safe_convert_datetime(user_data['created_at'])  # CONVERSION ICI
             )
     
     async def get_user_by_email(self, email: str) -> Optional[dict]:
@@ -97,7 +106,7 @@ class UserService:
                 "email": user_data['email'],
                 "password_hash": user_data['password_hash'],
                 "role": UserRole(user_data['role']),
-                "created_at": user_data['created_at']
+                "created_at": safe_convert_datetime(user_data['created_at'])  # CONVERSION ICI
             }
     
     async def get_user_by_username(self, username: str) -> Optional[UserResponse]:
@@ -120,5 +129,5 @@ class UserService:
                 username=user_data['username'],
                 email=user_data['email'],
                 role=UserRole(user_data['role']),
-                created_at=user_data['created_at']
+                created_at=safe_convert_datetime(user_data['created_at'])  # CONVERSION ICI
             )
