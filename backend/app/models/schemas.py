@@ -136,7 +136,7 @@ class PlatformResponse(PlatformBase):
 # === SEARCH MODELS ===
 class SearchQuery(BaseModel):
     query: str = Field(..., min_length=1, max_length=100)
-    type: Optional[str] = Field("all", regex="^(all|movie|person|genre)$")
+    type: Optional[str] = Field("all", pattern="^(all|movie|person|genre)$")
 
 class SearchResponse(BaseModel):
     query: str

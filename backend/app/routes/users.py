@@ -5,6 +5,7 @@ from typing import List
 from app.models.schemas import UserResponse
 from app.auth.dependencies import get_current_user, require_admin
 from app.database.connection import get_db
+from app.utils.helpers import convert_neo4j_datetime
 
 router = APIRouter()
 
@@ -35,7 +36,7 @@ async def get_users(
                     "username": user_data['username'],
                     "email": user_data['email'],
                     "role": user_data['role'],
-                    "created_at": user_data['created_at'],
+                    "created_at": convert_neo4j_datetime(user_data['created_at']),
                     "rating_count": record['rating_count']
                 }
                 users.append(user)
@@ -78,7 +79,7 @@ async def get_user(
                 "username": user_data['username'],
                 "email": user_data['email'],
                 "role": user_data['role'],
-                "created_at": user_data['created_at'],
+                "created_at": convert_neo4j_datetime(user_data['created_at']),
                 "rating_count": record['rating_count'],
                 "average_rating": record['avg_rating']
             }

@@ -7,7 +7,7 @@ class Neo4jConnection:
         self.driver = GraphDatabase.driver(
             os.getenv("NEO4J_URI", "bolt://localhost:7687"),
             auth=(
-                os.getenv("NEO4J_USER", "neo4j"),
+                os.getenv("NEO4J_USERNAME", "neo4j"),  # Changé NEO4J_USER -> NEO4J_USERNAME
                 os.getenv("NEO4J_PASSWORD", "password")
             )
         )

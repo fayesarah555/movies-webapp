@@ -9,6 +9,7 @@ from app.models.schemas import (
 )
 from app.auth.dependencies import get_current_user, require_admin
 from app.database.connection import get_db
+from app.utils.helpers import convert_neo4j_datetime, format_movie_response
 
 router = APIRouter()
 
@@ -42,20 +43,12 @@ async def get_movies(
             
             for record in result:
                 movie_data = record['m']
-                movie = {
-                    "id": movie_data['id'],
-                    "title": movie_data['title'],
-                    "year": movie_data['year'],
-                    "duration": movie_data.get('duration'),
-                    "synopsis": movie_data.get('synopsis'),
-                    "poster_url": movie_data.get('poster_url'),
-                    "trailer_url": movie_data.get('trailer_url'),
-                    "created_at": movie_data['created_at'],
-                    "updated_at": movie_data['updated_at'],
-                    "genres": record['genres'] or [],
-                    "average_rating": record['avg_rating'],
-                    "rating_count": record['rating_count'] or 0
-                }
+                movie = format_movie_response(
+                    movie_data=movie_data,
+                    genres=record['genres'],
+                    avg_rating=record['avg_rating'],
+                    rating_count=record['rating_count']
+                )
                 movies.append(movie)
             
             return movies
@@ -98,22 +91,14 @@ async def get_movie(movie_id: str):
                 raise HTTPException(status_code=404, detail="Film non trouvé")
             
             movie_data = record['m']
-            return {
-                "id": movie_data['id'],
-                "title": movie_data['title'],
-                "year": movie_data['year'],
-                "duration": movie_data.get('duration'),
-                "synopsis": movie_data.get('synopsis'),
-                "poster_url": movie_data.get('poster_url'),
-                "trailer_url": movie_data.get('trailer_url'),
-                "created_at": movie_data['created_at'],
-                "updated_at": movie_data['updated_at'],
-                "genres": record['genres'] or [],
-                "actors": record['actors'] or [],
-                "directors": record['directors'] or [],
-                "average_rating": record['avg_rating'],
-                "rating_count": record['rating_count'] or 0
-            }
+            return format_movie_response(
+                movie_data=movie_data,
+                genres=record['genres'],
+                actors=record['actors'],
+                directors=record['directors'],
+                avg_rating=record['avg_rating'],
+                rating_count=record['rating_count']
+            )
             
     except HTTPException:
         raise
@@ -165,18 +150,9 @@ async def create_movie(
             
             # Retourner le film créé
             movie_data = movie_node['m']
-            return {
-                "id": movie_data['id'],
-                "title": movie_data['title'],
-                "year": movie_data['year'],
-                "duration": movie_data.get('duration'),
-                "synopsis": movie_data.get('synopsis'),
-                "poster_url": movie_data.get('poster_url'),
-                "trailer_url": movie_data.get('trailer_url'),
-                "created_at": movie_data['created_at'],
-                "updated_at": movie_data['updated_at'],
-                "message": "Film créé avec succès"
-            }
+            return format_movie_response(
+                movie_data=movie_data
+            )
             
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -246,7 +222,7 @@ async def search_movies(
                     "title": movie_data['title'],
                     "year": movie_data['year'],
                     "poster_url": movie_data.get('poster_url'),
-                    "genres": record['genres'] or []
+                    "genres": convert_neo4j_datetime(record['genres'] or [])
                 }
                 movies.append(movie)
             

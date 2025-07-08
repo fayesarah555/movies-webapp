@@ -8,6 +8,7 @@ from app.models.schemas import (
 )
 from app.auth.dependencies import get_current_user, require_user_or_admin
 from app.database.connection import get_db
+from app.utils.helpers import convert_neo4j_datetime
 
 router = APIRouter()
 
@@ -131,7 +132,7 @@ async def get_movie_ratings(
                     "id": record['r'].get('id'),
                     "rating": record['r']['rating'],
                     "comment": record['r'].get('comment'),
-                    "created_at": record['r']['created_at'],
+                    "created_at": convert_neo4j_datetime(record['r']['created_at']),
                     "user": {
                         "id": record['u']['id'],
                         "username": record['u']['username']
@@ -178,7 +179,7 @@ async def get_my_ratings(
                     "id": record['r'].get('id'),
                     "rating": record['r']['rating'],
                     "comment": record['r'].get('comment'),
-                    "created_at": record['r']['created_at'],
+                    "created_at": convert_neo4j_datetime(record['r']['created_at']),
                     "movie": {
                         "id": record['m']['id'],
                         "title": record['m']['title'],
