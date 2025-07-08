@@ -1,14 +1,18 @@
 # main.py
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from neo4j import GraphDatabase
 import os
 from dotenv import load_dotenv
 
+# Charger les variables d'environnement
 load_dotenv()
 
-app = FastAPI(title="Movie Database API", version="1.0.0")
+# Créer l'application FastAPI
+app = FastAPI(
+    title="Movie Database API", 
+    version="1.0.0",
+    description="API pour la base de données de films avec Neo4j"
+)
 
 # Configuration CORS pour React
 app.add_middleware(
@@ -19,51 +23,64 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuration Neo4j
-class Neo4jConnection:
-    def __init__(self):
-        self.driver = GraphDatabase.driver(
-            os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-            auth=(
-                os.getenv("NEO4J_USER", "neo4j"),
-                os.getenv("NEO4J_PASSWORD", "password")
-            )
-        )
-    
-    def close(self):
-        self.driver.close()
-    
-    def execute_query(self, query, parameters=None):
-        with self.driver.session() as session:
-            return session.run(query, parameters or {})
-
-# Instance globale de connexion
-db = Neo4jConnection()
-
-# Security
-security = HTTPBearer()
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    # Ici vous implémenterez la vérification du JWT
-    # Pour l'instant, retourne un utilisateur fictif
-    return {"id": "admin", "role": "admin"}
-
 @app.on_event("startup")
 async def startup_event():
-    print("API démarrée - Connexion à Neo4j établie")
+    print("🚀 API Movie Database démarrée")
+    print("📊 Documentation disponible sur: http://localhost:8000/docs")
+    print("🔗 Neo4j Browser: http://localhost:7474")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    db.close()
-    print("Connexion Neo4j fermée")
+    from app.database.connection import close_db
+    close_db()
+    print("🔌 Connexion Neo4j fermée")
 
-# Import des routes
-from app.routes import movies, users, auth
+# Import et inclusion des routes
+from app.routes import movies, users, auth, ratings
 
-app.include_router(movies.router, prefix="/api/movies", tags=["movies"])
-app.include_router(users.router, prefix="/api/users", tags=["users"])
-app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
+app.include_router(auth.router, prefix="/api/auth", tags=["🔐 Authentication"])
+app.include_router(movies.router, prefix="/api/movies", tags=["🎬 Movies"])
+app.include_router(ratings.router, prefix="/api/ratings", tags=["⭐ Ratings"])
+app.include_router(users.router, prefix="/api/users", tags=["👥 Users"])
 
 @app.get("/")
 def read_root():
-    return {"message": "Movie Database API is running!"}
+    return {
+        "message": "🎬 Movie Database API is running!",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "status": "healthy"
+    }
+
+@app.get("/health")
+def health_check():
+    """Point de santé de l'API"""
+    try:
+        from app.database.connection import get_db
+        db = get_db()
+        
+        # Test simple de connexion
+        with db.driver.session() as session:
+            result = session.run("RETURN 1 as test")
+            test_result = result.single()
+            
+        return {
+            "status": "healthy",
+            "database": "connected" if test_result else "disconnected",
+            "message": "API fonctionnelle"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e)
+        }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=os.getenv("API_HOST", "0.0.0.0"),
+        port=int(os.getenv("API_PORT", "8000")),
+        reload=os.getenv("DEBUG", "True").lower() == "true"
+    )
