@@ -2,17 +2,28 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List
 from uuid import uuid4
+import neo4j.time
 
 from app.models.schemas import (
     RatingCreate, UserResponse
 )
 from app.auth.dependencies import get_current_user, require_user_or_admin
 from app.database.connection import get_db
-from app.utils.helpers import convert_neo4j_datetime
 
 router = APIRouter()
 
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
+def safe_convert(obj):
+    """Convertir les types Neo4j en types Python sérialisables"""
+    if isinstance(obj, neo4j.time.DateTime):
+        return obj.to_native().isoformat()
+    elif isinstance(obj, dict):
+        return {key: safe_convert(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [safe_convert(item) for item in obj]
+    else:
+        return obj
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_rating(
     rating_data: RatingCreate,
     current_user: UserResponse = Depends(require_user_or_admin)
@@ -102,7 +113,7 @@ async def create_rating(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la création de l'avis: {str(e)}")
 
-@router.get("/movie/{movie_id}", response_model=List[dict])
+@router.get("/movie/{movie_id}")
 async def get_movie_ratings(
     movie_id: str,
     skip: int = Query(0, ge=0),
@@ -132,7 +143,7 @@ async def get_movie_ratings(
                     "id": record['r'].get('id'),
                     "rating": record['r']['rating'],
                     "comment": record['r'].get('comment'),
-                    "created_at": convert_neo4j_datetime(record['r']['created_at']),
+                    "created_at": safe_convert(record['r']['created_at']),
                     "user": {
                         "id": record['u']['id'],
                         "username": record['u']['username']
@@ -149,7 +160,7 @@ async def get_movie_ratings(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des avis: {str(e)}")
 
-@router.get("/user/me", response_model=List[dict])
+@router.get("/user/me")
 async def get_my_ratings(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -179,7 +190,7 @@ async def get_my_ratings(
                     "id": record['r'].get('id'),
                     "rating": record['r']['rating'],
                     "comment": record['r'].get('comment'),
-                    "created_at": convert_neo4j_datetime(record['r']['created_at']),
+                    "created_at": safe_convert(record['r']['created_at']),
                     "movie": {
                         "id": record['m']['id'],
                         "title": record['m']['title'],

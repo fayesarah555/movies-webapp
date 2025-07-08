@@ -1,15 +1,26 @@
 # app/routes/users.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
+import neo4j.time
 
 from app.models.schemas import UserResponse
 from app.auth.dependencies import get_current_user, require_admin
 from app.database.connection import get_db
-from app.utils.helpers import convert_neo4j_datetime
 
 router = APIRouter()
 
-@router.get("/", response_model=List[dict])
+def safe_convert(obj):
+    """Convertir les types Neo4j en types Python sérialisables"""
+    if isinstance(obj, neo4j.time.DateTime):
+        return obj.to_native().isoformat()
+    elif isinstance(obj, dict):
+        return {key: safe_convert(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [safe_convert(item) for item in obj]
+    else:
+        return obj
+
+@router.get("/")
 async def get_users(
     current_user: UserResponse = Depends(require_admin)
 ):
@@ -30,13 +41,13 @@ async def get_users(
             users = []
             
             for record in result:
-                user_data = record['u']
+                user_data = dict(record['u'])
                 user = {
                     "id": user_data['id'],
                     "username": user_data['username'],
                     "email": user_data['email'],
                     "role": user_data['role'],
-                    "created_at": convert_neo4j_datetime(user_data['created_at']),
+                    "created_at": safe_convert(user_data['created_at']),
                     "rating_count": record['rating_count']
                 }
                 users.append(user)
@@ -46,7 +57,7 @@ async def get_users(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des utilisateurs: {str(e)}")
 
-@router.get("/{user_id}", response_model=dict)
+@router.get("/{user_id}")
 async def get_user(
     user_id: str,
     current_user: UserResponse = Depends(get_current_user)
@@ -73,13 +84,13 @@ async def get_user(
             if not record:
                 raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
             
-            user_data = record['u']
+            user_data = dict(record['u'])
             return {
                 "id": user_data['id'],
                 "username": user_data['username'],
                 "email": user_data['email'],
                 "role": user_data['role'],
-                "created_at": convert_neo4j_datetime(user_data['created_at']),
+                "created_at": safe_convert(user_data['created_at']),
                 "rating_count": record['rating_count'],
                 "average_rating": record['avg_rating']
             }
@@ -89,7 +100,7 @@ async def get_user(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération de l'utilisateur: {str(e)}")
 
-@router.get("/{user_id}/stats", response_model=dict)
+@router.get("/{user_id}/stats")
 async def get_user_stats(
     user_id: str,
     current_user: UserResponse = Depends(get_current_user)

@@ -3,24 +3,33 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
+import neo4j.time
 
 from app.models.schemas import (
     MovieCreate, MovieUpdate, MovieResponse, UserResponse
 )
 from app.auth.dependencies import get_current_user, require_admin
 from app.database.connection import get_db
-from app.utils.helpers import convert_neo4j_datetime, format_movie_response
 
 router = APIRouter()
 
-@router.get("/", response_model=List[dict])
+def safe_convert(obj):
+    """Convertir les types Neo4j en types Python sérialisables"""
+    if isinstance(obj, neo4j.time.DateTime):
+        return obj.to_native().isoformat()
+    elif isinstance(obj, dict):
+        return {key: safe_convert(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [safe_convert(item) for item in obj]
+    else:
+        return obj
+
+@router.get("/")
 async def get_movies(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100)
 ):
-    """
-    Récupérer la liste des films avec pagination
-    """
+    """Récupérer la liste des films avec pagination"""
     try:
         db = get_db()
         
@@ -42,13 +51,23 @@ async def get_movies(
             movies = []
             
             for record in result:
-                movie_data = record['m']
-                movie = format_movie_response(
-                    movie_data=movie_data,
-                    genres=record['genres'],
-                    avg_rating=record['avg_rating'],
-                    rating_count=record['rating_count']
-                )
+                movie_data = dict(record['m'])
+                
+                # Convertir MANUELLEMENT chaque champ
+                movie = {
+                    "id": movie_data['id'],
+                    "title": movie_data['title'],
+                    "year": movie_data['year'],
+                    "duration": movie_data.get('duration'),
+                    "synopsis": movie_data.get('synopsis'),
+                    "poster_url": movie_data.get('poster_url'),
+                    "trailer_url": movie_data.get('trailer_url'),
+                    "created_at": safe_convert(movie_data['created_at']),
+                    "updated_at": safe_convert(movie_data['updated_at']),
+                    "genres": safe_convert(record['genres'] or []),
+                    "average_rating": record['avg_rating'],
+                    "rating_count": record['rating_count'] or 0
+                }
                 movies.append(movie)
             
             return movies
@@ -56,11 +75,9 @@ async def get_movies(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des films: {str(e)}")
 
-@router.get("/{movie_id}", response_model=dict)
+@router.get("/{movie_id}")
 async def get_movie(movie_id: str):
-    """
-    Récupérer un film par son ID
-    """
+    """Récupérer un film par son ID"""
     try:
         db = get_db()
         
@@ -90,29 +107,35 @@ async def get_movie(movie_id: str):
             if not record:
                 raise HTTPException(status_code=404, detail="Film non trouvé")
             
-            movie_data = record['m']
-            return format_movie_response(
-                movie_data=movie_data,
-                genres=record['genres'],
-                actors=record['actors'],
-                directors=record['directors'],
-                avg_rating=record['avg_rating'],
-                rating_count=record['rating_count']
-            )
+            movie_data = dict(record['m'])
+            return {
+                "id": movie_data['id'],
+                "title": movie_data['title'],
+                "year": movie_data['year'],
+                "duration": movie_data.get('duration'),
+                "synopsis": movie_data.get('synopsis'),
+                "poster_url": movie_data.get('poster_url'),
+                "trailer_url": movie_data.get('trailer_url'),
+                "created_at": safe_convert(movie_data['created_at']),
+                "updated_at": safe_convert(movie_data['updated_at']),
+                "genres": safe_convert(record['genres'] or []),
+                "actors": safe_convert(record['actors'] or []),
+                "directors": safe_convert(record['directors'] or []),
+                "average_rating": record['avg_rating'],
+                "rating_count": record['rating_count'] or 0
+            }
             
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération du film: {str(e)}")
 
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_movie(
     movie: MovieCreate,
     current_user: UserResponse = Depends(require_admin)
 ):
-    """
-    Créer un nouveau film (Admin seulement)
-    """
+    """Créer un nouveau film (Admin seulement)"""
     try:
         db = get_db()
         movie_id = str(uuid4())
@@ -149,10 +172,19 @@ async def create_movie(
                 raise ValueError("Erreur lors de la création du film")
             
             # Retourner le film créé
-            movie_data = movie_node['m']
-            return format_movie_response(
-                movie_data=movie_data
-            )
+            movie_data = dict(movie_node['m'])
+            return {
+                "id": movie_data['id'],
+                "title": movie_data['title'],
+                "year": movie_data['year'],
+                "duration": movie_data.get('duration'),
+                "synopsis": movie_data.get('synopsis'),
+                "poster_url": movie_data.get('poster_url'),
+                "trailer_url": movie_data.get('trailer_url'),
+                "created_at": safe_convert(movie_data['created_at']),
+                "updated_at": safe_convert(movie_data['updated_at']),
+                "message": "Film créé avec succès"
+            }
             
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -164,9 +196,7 @@ async def delete_movie(
     movie_id: str,
     current_user: UserResponse = Depends(require_admin)
 ):
-    """
-    Supprimer un film (Admin seulement)
-    """
+    """Supprimer un film (Admin seulement)"""
     try:
         db = get_db()
         
@@ -189,14 +219,12 @@ async def delete_movie(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression du film: {str(e)}")
 
-@router.get("/search/", response_model=List[dict])
+@router.get("/search/")
 async def search_movies(
     q: str = Query(..., min_length=1, description="Terme de recherche"),
     limit: int = Query(10, ge=1, le=50)
 ):
-    """
-    Rechercher des films
-    """
+    """Rechercher des films"""
     try:
         db = get_db()
         
@@ -216,13 +244,13 @@ async def search_movies(
             movies = []
             
             for record in result:
-                movie_data = record['m']
+                movie_data = dict(record['m'])
                 movie = {
                     "id": movie_data['id'],
                     "title": movie_data['title'],
                     "year": movie_data['year'],
                     "poster_url": movie_data.get('poster_url'),
-                    "genres": convert_neo4j_datetime(record['genres'] or [])
+                    "genres": safe_convert(record['genres'] or [])
                 }
                 movies.append(movie)
             

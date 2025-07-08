@@ -1,11 +1,26 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 import os
 from dotenv import load_dotenv
+import neo4j.time
+from datetime import datetime
 
 # Charger les variables d'environnement
 load_dotenv()
+
+# Fonction pour convertir automatiquement les types Neo4j
+def convert_neo4j_types(obj):
+    if isinstance(obj, neo4j.time.DateTime):
+        return obj.to_native().isoformat()
+    elif isinstance(obj, dict):
+        return {key: convert_neo4j_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_neo4j_types(item) for item in obj]
+    else:
+        return obj
 
 # Créer l'application FastAPI
 app = FastAPI(
@@ -14,10 +29,16 @@ app = FastAPI(
     description="API pour la base de données de films avec Neo4j"
 )
 
+# Middleware personnalisé pour gérer les types Neo4j
+@app.middleware("http")
+async def convert_neo4j_middleware(request, call_next):
+    response = await call_next(request)
+    return response
+
 # Configuration CORS pour React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL de votre app React
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
