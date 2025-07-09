@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from db.neo4j_conn import neo4j_conn
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
 # Importer les routers modulaires
 from routes.movies import router as movies_router
@@ -12,6 +13,7 @@ from routes.users import router as users_router
 from routes.reviews import router as reviews_router
 from routes.stats import router as stats_router
 from routes.users import login as users_login
+from routes.users import register as users_register
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -108,3 +110,13 @@ def redirect_recommend_similar_movies(title: str, limit: int = 10):
 @app.post("/login", include_in_schema=False)
 def proxy_login(form_data: OAuth2PasswordRequestForm = Depends()):
     return users_login(form_data)
+
+# Correction FastAPI : proxy POST /register vers la fonction register du module users
+class UserRegisterProxy(BaseModel):
+    username: str
+    password: str
+    role: str = "user"
+
+@app.post("/register", include_in_schema=False)
+def proxy_register(user: UserRegisterProxy):
+    return users_register(user)
