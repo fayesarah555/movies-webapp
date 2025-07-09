@@ -532,4 +532,27 @@ CREATE
   (SarahJohnson)-[:REVIEWED {summary:'Ambitious but uneven', rating:72, date:'2023-08-10', helpful:11}]->(CloudAtlas),
   (TomAnderson)-[:REVIEWED {summary:'Complex narrative structure', rating:76, date:'2023-08-12', helpful:17}]->(CloudAtlas),
   (EmmaLeblanc)-[:REVIEWED {summary:'Beautifully interconnected stories', rating:81, date:'2023-08-14', helpful:20}]->(CloudAtlas)
+
+// Parasite movie and cast
+CREATE (Parasite:Movie {title:'Parasite', released:2019, tagline:'Act like you own the place'})
+CREATE (KangHoSong:Person {name:'Kang-ho Song'})
+CREATE (SunKyunLee:Person {name:'Sun-kyun Lee'})
+CREATE (YeoJeongJo:Person {name:'Yeo-jeong Jo'})
+CREATE (WooSikChoi:Person {name:'Woo-sik Choi'})
+CREATE (SoDamPark:Person  {name:'So-dam Park'})
+CREATE
+  (KangHoSong)-[:ACTED_IN {roles:['Ki Taek']}]->(Parasite),
+  (SunKyunLee)-[:ACTED_IN {roles:['Dong Ik']}]->(Parasite),
+  (YeoJeongJo)-[:ACTED_IN {roles:['Yeon Kyo']}]->(Parasite),
+  (WooSikChoi)-[:ACTED_IN {roles:['Ki Woo']}]->(Parasite),
+  (SoDamPark)-[:ACTED_IN {roles:['Ki Jung']}]->(Parasite)
+// Joker movie and cast
+CREATE (Joker:Movie {title:'Joker', released:2019, tagline:'Put on a happy face'})
+CREATE (JoaquinPhoenix:Person {name:'Joaquin Phoenix'})
+CREATE (RobertDeNiro:Person {name:'Robert De Niro'})
+CREATE (ZazieBeetz:Person {name:'Zazie Beetz'})
+CREATE
+  (JoaquinPhoenix)-[:ACTED_IN {roles:['Arthur Fleck']}]->(Joker),
+  (RobertDeNiro)-[:ACTED_IN {roles:['Murray Franklin']}]->(Joker),
+  (ZazieBeetz)-[:ACTED_IN {roles:['Sophie Dumond']}]->(Joker)
 ;

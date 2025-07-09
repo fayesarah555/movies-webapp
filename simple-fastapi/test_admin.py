@@ -18,19 +18,22 @@ def admin_token():
     token = resp.json()["access_token"]
     return token
 
-def test_create_movie(admin_token):
+@pytest.fixture(scope="module")
+def unique_movie_title():
+    # Génère un titre unique pour tous les tests du module
+    return f"Test Movie {int(time.time() * 1000)}"
+
+def test_create_movie(admin_token, unique_movie_title):
     headers = {"Authorization": f"Bearer {admin_token}"}
-    # Utiliser un titre unique pour chaque test
-    unique_title = f"Test Movie {int(time.time() * 1000)}"
-    data = {"title": unique_title, "released": 2025, "tagline": "Test tagline"}
+    data = {"title": unique_movie_title, "released": 2025, "tagline": "Test tagline"}
     resp = httpx.post(f"{BASE_URL}/movies", json=data, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
 
-def test_update_movie(admin_token):
+def test_update_movie(admin_token, unique_movie_title):
     headers = {"Authorization": f"Bearer {admin_token}"}
     data = {"tagline": "Updated tagline"}
-    resp = httpx.put(f"{BASE_URL}/movies/Test Movie", json=data, headers=headers)
+    resp = httpx.put(f"{BASE_URL}/movies/{unique_movie_title}", json=data, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
 
@@ -42,22 +45,22 @@ def test_create_person(admin_token):
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
 
-def test_add_actor_to_movie(admin_token):
+def test_add_actor_to_movie(admin_token, unique_movie_title):
     headers = {"Authorization": f"Bearer {admin_token}"}
     # S'assurer que le film existe
-    movie_data = {"title": "Test Movie", "released": 2025, "tagline": "Test tagline"}
+    movie_data = {"title": unique_movie_title, "released": 2025, "tagline": "Test tagline"}
     httpx.post(f"{BASE_URL}/movies", json=movie_data, headers=headers)
     # S'assurer que la personne existe
     person_data = {"name": "Test Person", "born": 1990}
     httpx.post(f"{BASE_URL}/persons", json=person_data, headers=headers)
     # Ajouter l'acteur au film
     data = {"name": "Test Person", "roles": ["Neo"]}
-    resp = httpx.post(f"{BASE_URL}/movies/Test Movie/actors", json=data, headers=headers)
+    resp = httpx.post(f"{BASE_URL}/movies/{unique_movie_title}/actors", json=data, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
 
-def test_delete_movie(admin_token):
+def test_delete_movie(admin_token, unique_movie_title):
     headers = {"Authorization": f"Bearer {admin_token}"}
-    resp = httpx.delete(f"{BASE_URL}/movies/Test Movie", headers=headers)
+    resp = httpx.delete(f"{BASE_URL}/movies/{unique_movie_title}", headers=headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"

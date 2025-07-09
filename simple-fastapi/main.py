@@ -645,3 +645,50 @@ def get_collaborations(person1: str, person2: str):
             }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.get("/recommend/movies/similar/{title}")
+def recommend_similar_movies(title: str, limit: int = 5):
+    """Recommander des films similaires à un film donné (par acteurs/réalisateurs/producteurs)"""
+    try:
+        with neo4j_conn.driver.session() as session:
+            result = session.run("""
+                MATCH (m:Movie)
+                WITH m, apoc.text.sorensenDiceSimilarity(toLower(m.title), toLower($title)) AS similarity
+                WHERE similarity > 0.5
+                WITH m, similarity
+                ORDER BY similarity DESC
+                LIMIT 1
+                MATCH (m)<-[:ACTED_IN|:DIRECTED|:PRODUCED]-(p:Person)-[:ACTED_IN|:DIRECTED|:PRODUCED]->(rec:Movie)
+                WHERE rec.title <> m.title
+                RETURN rec.title AS title, rec.released AS released, count(*) AS score
+                ORDER BY score DESC, rec.released DESC
+                LIMIT $limit
+            """, title=title, limit=limit)
+            movies = [dict(record) for record in result]
+        return {"status": "success", "recommendations": movies, "base_title": title}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/recommend/movies/{username}")
+def recommend_movies_for_user(username: str, limit: int = 5):
+    """Recommander des films à un utilisateur selon les goûts d'utilisateurs similaires (collaboratif)"""
+    try:
+        with neo4j_conn.driver.session() as session:
+            result = session.run("""
+                MATCH (u:User {username: $username})-[:RATED]->(m:Movie)
+                WITH u, collect(m) AS user_movies
+                MATCH (other:User)-[:RATED]->(m2:Movie)
+                WHERE other <> u AND m2 IN user_movies
+                WITH other, count(*) AS common_movies, u
+                ORDER BY common_movies DESC
+                LIMIT 5
+                MATCH (other)-[:RATED]->(rec:Movie)
+                WHERE NOT (u)-[:RATED]->(rec)
+                RETURN rec.title AS title, rec.released AS released, count(*) AS score
+                ORDER BY score DESC, rec.released DESC
+                LIMIT $limit
+            """, username=username, limit=limit)
+            movies = [dict(record) for record in result]
+        return {"status": "success", "recommendations": movies, "user": username}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
