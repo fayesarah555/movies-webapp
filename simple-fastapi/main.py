@@ -200,9 +200,13 @@ def get_person_by_name(name: str):
 API_TOKEN = os.getenv("API_TOKEN", "supersecret")
 security = HTTPBearer()
 
+# Auth: JWT obligatoire, plus de token statique
+SECRET_KEY = os.getenv("API_TOKEN", "supersecret")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
-    # Essayer de décoder le JWT
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
@@ -210,62 +214,110 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
         return username
     except JWTError:
-        # Fallback: accepter le token statique legacy
-        if token == API_TOKEN:
-            return "admin"
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-@app.post("/movies", dependencies=[Depends(verify_token)])
-def create_movie(movie_data: dict):
-    """Créer un nouveau film"""
+def verify_admin(username: str = Depends(verify_token)):
+    with neo4j_conn.driver.session() as session:
+        result = session.run("MATCH (u:User {username: $username}) RETURN u.role as role", username=username)
+        record = result.single()
+        if not record or record["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin privileges required")
+        return username
+
+# Les routes CRUD protégées par verify_admin
+@app.post("/movies", dependencies=[Depends(verify_admin)])
+def create_movie(movie_data: dict, username: str = Depends(verify_admin)):
     try:
         title = movie_data.get("title")
         released = movie_data.get("released")
         tagline = movie_data.get("tagline", "")
-        
         if not title or not released:
             return {"status": "error", "message": "Titre et année de sortie requis"}
-        
         with neo4j_conn.driver.session() as session:
-            # Vérifier si le film existe déjà
             existing = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=title)
             if existing.single():
                 return {"status": "error", "message": "Film déjà existant"}
-            
-            # Créer le film
             session.run("""
                 CREATE (m:Movie {title: $title, released: $released, tagline: $tagline})
                 RETURN m
             """, title=title, released=released, tagline=tagline)
-            
         return {
             "status": "success",
             "message": f"Film '{title}' créé avec succès"
         }
+    except HTTPException as e:
+        if e.status_code == 403:
+            return {"status": "error", "message": "Vous n'avez pas les accès nécessaires pour cette opération."}
+        raise
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.post("/persons", dependencies=[Depends(verify_token)])
-def create_person(person_data: dict):
-    """Créer une nouvelle personne"""
+@app.put("/movies/{title}", dependencies=[Depends(verify_admin)])
+def update_movie(title: str, movie_data: dict, username: str = Depends(verify_admin)):
+    try:
+        with neo4j_conn.driver.session() as session:
+            existing = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=title)
+            if not existing.single():
+                return {"status": "error", "message": "Film non trouvé"}
+            set_clauses = []
+            params = {"title": title}
+            if "released" in movie_data:
+                set_clauses.append("m.released = $released")
+                params["released"] = movie_data["released"]
+            if "tagline" in movie_data:
+                set_clauses.append("m.tagline = $tagline")
+                params["tagline"] = movie_data["tagline"]
+            if set_clauses:
+                query = f"MATCH (m:Movie {{title: $title}}) SET {', '.join(set_clauses)} RETURN m"
+                session.run(query, **params)
+        return {
+            "status": "success",
+            "message": f"Film '{title}' mis à jour avec succès"
+        }
+    except HTTPException as e:
+        if e.status_code == 403:
+            return {"status": "error", "message": "Vous n'avez pas les accès nécessaires pour cette opération."}
+        raise
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.delete("/movies/{title}", dependencies=[Depends(verify_admin)])
+def delete_movie(title: str, username: str = Depends(verify_admin)):
+    try:
+        with neo4j_conn.driver.session() as session:
+            existing = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=title)
+            if not existing.single():
+                return {"status": "error", "message": "Film non trouvé"}
+            session.run("""
+                MATCH (m:Movie {title: $title})
+                DETACH DELETE m
+            """, title=title)
+        return {
+            "status": "success",
+            "message": f"Film '{title}' supprimé avec succès"
+        }
+    except HTTPException as e:
+        if e.status_code == 403:
+            return {"status": "error", "message": "Vous n'avez pas les accès nécessaires pour cette opération."}
+        raise
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/persons", dependencies=[Depends(verify_admin)])
+def create_person(person_data: dict, username: str = Depends(verify_admin)):
     try:
         name = person_data.get("name")
         born = person_data.get("born")
-        
         if not name:
             return {"status": "error", "message": "Nom requis"}
-        
         with neo4j_conn.driver.session() as session:
-            # Vérifier si la personne existe déjà
             existing = session.run("MATCH (p:Person {name: $name}) RETURN p", name=name)
             if existing.single():
                 return {"status": "error", "message": "Personne déjà existante"}
-            
-            # Créer la personne
             if born:
                 session.run("""
                     CREATE (p:Person {name: $name, born: $born})
@@ -276,100 +328,43 @@ def create_person(person_data: dict):
                     CREATE (p:Person {name: $name})
                     RETURN p
                 """, name=name)
-            
         return {
             "status": "success",
             "message": f"Personne '{name}' créée avec succès"
         }
+    except HTTPException as e:
+        if e.status_code == 403:
+            return {"status": "error", "message": "Vous n'avez pas les accès nécessaires pour cette opération."}
+        raise
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.put("/movies/{title}", dependencies=[Depends(verify_token)])
-def update_movie(title: str, movie_data: dict):
-    """Mettre à jour un film"""
-    try:
-        with neo4j_conn.driver.session() as session:
-            # Vérifier si le film existe
-            existing = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=title)
-            if not existing.single():
-                return {"status": "error", "message": "Film non trouvé"}
-            
-            # Mettre à jour les propriétés
-            set_clauses = []
-            params = {"title": title}
-            
-            if "released" in movie_data:
-                set_clauses.append("m.released = $released")
-                params["released"] = movie_data["released"]
-            
-            if "tagline" in movie_data:
-                set_clauses.append("m.tagline = $tagline")
-                params["tagline"] = movie_data["tagline"]
-            
-            if set_clauses:
-                query = f"MATCH (m:Movie {{title: $title}}) SET {', '.join(set_clauses)} RETURN m"
-                session.run(query, **params)
-            
-        return {
-            "status": "success",
-            "message": f"Film '{title}' mis à jour avec succès"
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@app.delete("/movies/{title}", dependencies=[Depends(verify_token)])
-def delete_movie(title: str):
-    """Supprimer un film"""
-    try:
-        with neo4j_conn.driver.session() as session:
-            # Vérifier si le film existe
-            existing = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=title)
-            if not existing.single():
-                return {"status": "error", "message": "Film non trouvé"}
-            
-            # Supprimer le film et ses relations
-            session.run("""
-                MATCH (m:Movie {title: $title})
-                DETACH DELETE m
-            """, title=title)
-            
-        return {
-            "status": "success",
-            "message": f"Film '{title}' supprimé avec succès"
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-@app.post("/movies/{movie_title}/actors", dependencies=[Depends(verify_token)])
-def add_actor_to_movie(movie_title: str, actor_data: dict):
-    """Ajouter un acteur à un film"""
+@app.post("/movies/{movie_title}/actors", dependencies=[Depends(verify_admin)])
+def add_actor_to_movie(movie_title: str, actor_data: dict, username: str = Depends(verify_admin)):
     try:
         actor_name = actor_data.get("name")
         roles = actor_data.get("roles", [])
-        
         if not actor_name:
             return {"status": "error", "message": "Nom de l'acteur requis"}
-        
         with neo4j_conn.driver.session() as session:
-            # Vérifier que le film et l'acteur existent
             movie_exists = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=movie_title).single()
             person_exists = session.run("MATCH (p:Person {name: $name}) RETURN p", name=actor_name).single()
-            
             if not movie_exists:
                 return {"status": "error", "message": "Film non trouvé"}
             if not person_exists:
                 return {"status": "error", "message": "Acteur non trouvé"}
-            
-            # Créer la relation ACTED_IN
             session.run("""
                 MATCH (p:Person {name: $actor_name}), (m:Movie {title: $movie_title})
                 MERGE (p)-[:ACTED_IN {roles: $roles}]->(m)
             """, actor_name=actor_name, movie_title=movie_title, roles=roles)
-            
         return {
             "status": "success",
             "message": f"Acteur '{actor_name}' ajouté au film '{movie_title}'"
         }
+    except HTTPException as e:
+        if e.status_code == 403:
+            return {"status": "error", "message": "Vous n'avez pas les accès nécessaires pour cette opération."}
+        raise
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -443,12 +438,15 @@ def read_item(item_id: int, q: str = None):
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 
+# Ajout d'un champ role à l'inscription (admin ou user)
 class UserRegister(BaseModel):
     username: str
     password: str
+    role: Optional[str] = "user"
 
 class UserOut(BaseModel):
     username: str
+    role: str
 
 # --- Utilisateurs en base Neo4j ---
 
@@ -460,12 +458,9 @@ def register(user: UserRegister = Body(...)):
         if existing.single():
             raise HTTPException(status_code=400, detail="Username already exists")
         hashed = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt()).decode()
-        session.run("CREATE (u:User {username: $username, password: $password})", username=user.username, password=hashed)
-    return {"username": user.username}
-
-SECRET_KEY = os.getenv("API_TOKEN", "supersecret")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+        role = user.role if user.role in ["admin", "user"] else "user"
+        session.run("CREATE (u:User {username: $username, password: $password, role: $role})", username=user.username, password=hashed, role=role)
+    return {"username": user.username, "role": role}
 
 @app.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -481,3 +476,46 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         to_encode = {"sub": form_data.username, "exp": expire}
         token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return {"access_token": token, "token_type": "bearer"}
+
+class ReviewIn(BaseModel):
+    movie_title: str
+    rating: int
+    comment: Optional[str] = None
+
+class ReviewOut(BaseModel):
+    username: str
+    movie_title: str
+    rating: int
+    comment: Optional[str] = None
+    created_at: str
+
+@app.post("/reviews", response_model=ReviewOut, dependencies=[Depends(verify_token)])
+def add_review(review: ReviewIn, username: str = Depends(verify_token)):
+    if not (1 <= review.rating <= 5):
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+    created_at = datetime.utcnow().isoformat()
+    with neo4j_conn.driver.session() as session:
+        # Vérifier que le film existe
+        movie = session.run("MATCH (m:Movie {title: $title}) RETURN m", title=review.movie_title).single()
+        if not movie:
+            raise HTTPException(status_code=404, detail="Movie not found")
+        # Créer ou mettre à jour l'avis (1 avis par user/movie)
+        session.run("""
+            MERGE (u:User {username: $username})
+            WITH u
+            MATCH (m:Movie {title: $movie_title})
+            MERGE (u)-[r:RATED]->(m)
+            SET r.rating = $rating, r.comment = $comment, r.created_at = $created_at
+        """, username=username, movie_title=review.movie_title, rating=review.rating, comment=review.comment, created_at=created_at)
+    return ReviewOut(username=username, movie_title=review.movie_title, rating=review.rating, comment=review.comment, created_at=created_at)
+
+@app.get("/reviews/{movie_title}")
+def get_reviews(movie_title: str):
+    with neo4j_conn.driver.session() as session:
+        result = session.run("""
+            MATCH (u:User)-[r:RATED]->(m:Movie {title: $movie_title})
+            RETURN u.username as username, r.rating as rating, r.comment as comment, r.created_at as created_at
+            ORDER BY r.created_at DESC
+        """, movie_title=movie_title)
+        reviews = [dict(record) for record in result]
+    return {"reviews": reviews, "count": len(reviews)}
