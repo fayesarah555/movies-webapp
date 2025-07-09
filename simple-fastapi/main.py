@@ -117,27 +117,38 @@ def get_all_movies(limit: int = 20, skip: int = 0):
 
 @app.get("/movies/{title}")
 def get_movie_by_title(title: str):
-    """Récupérer un film par son titre avec cast complet"""
+    """Récupérer un film par son titre (tolérant, fuzzy) avec cast complet"""
     try:
         with neo4j_conn.driver.session() as session:
-            result = session.run("""
-                MATCH (m:Movie {title: $title})
-                OPTIONAL MATCH (p:Person)-[r:ACTED_IN]->(m)
-                OPTIONAL MATCH (d:Person)-[:DIRECTED]->(m)
-                OPTIONAL MATCH (prod:Person)-[:PRODUCED]->(m)
-                RETURN m.title as title, m.released as released, m.tagline as tagline,
-                       collect(DISTINCT {name: p.name, roles: r.roles}) as actors,
-                       collect(DISTINCT d.name) as directors,
-                       collect(DISTINCT prod.name) as producers
-            """, title=title)
-            
+            # Recherche tolérante (fuzzy) sur le titre
+            cypher = '''
+            MATCH (m:Movie)
+            WITH m, apoc.text.sorensenDiceSimilarity(toLower(m.title), toLower($title)) AS similarity
+            WHERE similarity > 0.5
+            OPTIONAL MATCH (p:Person)-[r:ACTED_IN]->(m)
+            OPTIONAL MATCH (d:Person)-[:DIRECTED]->(m)
+            OPTIONAL MATCH (prod:Person)-[:PRODUCED]->(m)
+            RETURN m.title as title, m.released as released, m.tagline as tagline,
+                   collect(DISTINCT {name: p.name, roles: r.roles}) as actors,
+                   collect(DISTINCT d.name) as directors,
+                   collect(DISTINCT prod.name) as producers,
+                   similarity
+            ORDER BY similarity DESC
+            LIMIT 1
+            '''
+            result = session.run(cypher, title=title)
             record = result.single()
-            if not record:
+            if not record or not record["title"]:
                 return {"status": "error", "message": "Film non trouvé"}
-                
             return {
                 "status": "success",
-                "movie": dict(record)
+                "title": record["title"],
+                "released": record["released"],
+                "tagline": record["tagline"],
+                "actors": [a for a in record["actors"] if a["name"]],
+                "directors": [d for d in record["directors"] if d],
+                "producers": [p for p in record["producers"] if p],
+                "similarity": record["similarity"]
             }
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -166,33 +177,39 @@ def get_all_persons(limit: int = 20, skip: int = 0):
 
 @app.get("/persons/{name}")
 def get_person_by_name(name: str):
-    """Récupérer une personne avec sa filmographie"""
+    """Récupérer une personne (tolérant, fuzzy) avec sa filmographie"""
     try:
         with neo4j_conn.driver.session() as session:
-            result = session.run("""
-                MATCH (p:Person {name: $name})
-                OPTIONAL MATCH (p)-[r:ACTED_IN]->(m:Movie)
-                WITH p, collect(CASE WHEN m IS NOT NULL THEN {movie: m.title, roles: r.roles} END) AS acted_in_raw
-                OPTIONAL MATCH (p)-[:DIRECTED]->(dm:Movie)
-                WITH p, acted_in_raw, collect(dm.title) AS directed_raw
-                OPTIONAL MATCH (p)-[:PRODUCED]->(pm:Movie)
-                WITH p, acted_in_raw, directed_raw, collect(pm.title) AS produced_raw
-                RETURN p.name as name, p.born as born,
-                       [x IN acted_in_raw WHERE x IS NOT NULL] as acted_in,
-                       [d IN directed_raw WHERE d IS NOT NULL] as directed,
-                       [pr IN produced_raw WHERE pr IS NOT NULL] as produced
-            """, name=name)
-            
+            cypher = '''
+            MATCH (p:Person)
+            WITH p, apoc.text.sorensenDiceSimilarity(toLower(p.name), toLower($name)) AS similarity
+            WHERE similarity > 0.5
+            OPTIONAL MATCH (p)-[r:ACTED_IN]->(m:Movie)
+            WITH p, similarity, collect(CASE WHEN m IS NOT NULL THEN {movie: m.title, roles: r.roles} END) AS acted_in_raw
+            OPTIONAL MATCH (p)-[:DIRECTED]->(dm:Movie)
+            WITH p, similarity, acted_in_raw, collect(dm.title) AS directed_raw
+            OPTIONAL MATCH (p)-[:PRODUCED]->(pm:Movie)
+            WITH p, similarity, acted_in_raw, directed_raw, collect(pm.title) AS produced_raw
+            RETURN p.name as name, p.born as born,
+                   [x IN acted_in_raw WHERE x IS NOT NULL] as acted_in,
+                   [d IN directed_raw WHERE d IS NOT NULL] as directed,
+                   [pr IN produced_raw WHERE pr IS NOT NULL] as produced,
+                   similarity
+            ORDER BY similarity DESC
+            LIMIT 1
+            '''
+            result = session.run(cypher, name=name)
             record = result.single()
-            if not record:
+            if not record or not record["name"]:
                 return {"status": "error", "message": "Personne non trouvée"}
-            
-            person = dict(record)
-            # Nettoyer la liste acted_in pour ne garder que les films valides
-            person["acted_in"] = [a for a in person["acted_in"] if a and a["movie"]]
             return {
                 "status": "success",
-                "person": person
+                "name": record["name"],
+                "born": record["born"],
+                "acted_in": record["acted_in"],
+                "directed": record["directed"],
+                "produced": record["produced"],
+                "similarity": record["similarity"]
             }
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -369,20 +386,32 @@ def add_actor_to_movie(movie_title: str, actor_data: dict, username: str = Depen
         return {"status": "error", "message": str(e)}
 
 @app.get("/search/movies")
-def search_movies(q: str, limit: int = 10):
-    """Rechercher des films par titre"""
+def search_movies(q: str, limit: int = 10, fuzzy: bool = True):
+    """Rechercher des films par titre (fuzzy si possible)"""
     try:
         with neo4j_conn.driver.session() as session:
-            result = session.run("""
+            if fuzzy:
+                # Recherche floue avec APOC (Sorensen-Dice)
+                cypher = '''
                 MATCH (m:Movie)
-                WHERE toLower(m.title) CONTAINS toLower($search)
-                RETURN m.title as title, m.released as released, m.tagline as tagline
-                ORDER BY m.released DESC
+                WITH m, apoc.text.sorensenDiceSimilarity(toLower(m.title), toLower($search)) AS similarity
+                WHERE similarity > 0.5
+                RETURN m.title as title, m.released as released, m.tagline as tagline, similarity
+                ORDER BY similarity DESC, m.released DESC
                 LIMIT $limit
-            """, search=q, limit=limit)
-            
-            movies = [dict(record) for record in result]
-            
+                '''
+                result = session.run(cypher, search=q, limit=limit)
+                movies = [dict(record) for record in result]
+            else:
+                # Recherche classique (sous-chaîne, insensible à la casse)
+                result = session.run('''
+                    MATCH (m:Movie)
+                    WHERE toLower(m.title) CONTAINS toLower($search)
+                    RETURN m.title as title, m.released as released, m.tagline as tagline
+                    ORDER BY m.released DESC
+                    LIMIT $limit
+                ''', search=q, limit=limit)
+                movies = [dict(record) for record in result]
         return {
             "status": "success",
             "movies": movies,
@@ -522,60 +551,97 @@ def get_reviews(movie_title: str):
 
 @app.get("/actors/{name}/movies")
 def get_movies_by_actor(name: str):
-    """Lister tous les films d'un acteur donné"""
+    """Lister tous les films d'un acteur donné (fuzzy)"""
     try:
         with neo4j_conn.driver.session() as session:
-            result = session.run("""
-                MATCH (p:Person {name: $name})- [r:ACTED_IN]->(m:Movie)
-                RETURN m.title as title, m.released as released, r.roles as roles
-                ORDER BY m.released DESC
-            """, name=name)
+            cypher = '''
+            MATCH (p:Person)
+            WITH p, apoc.text.sorensenDiceSimilarity(toLower(p.name), toLower($name)) AS similarity
+            WHERE similarity > 0.5
+            WITH p, similarity
+            ORDER BY similarity DESC
+            LIMIT 1
+            MATCH (p)-[r:ACTED_IN]->(m:Movie)
+            RETURN m.title as title, m.released as released, r.roles as roles, p.name as actor, similarity
+            ORDER BY m.released DESC
+            '''
+            result = session.run(cypher, name=name)
             movies = [dict(record) for record in result]
+        if not movies:
+            return {"status": "error", "message": "Aucun film trouvé pour cet acteur"}
         return {
             "status": "success",
-            "actor": name,
-            "movies": movies,
-            "count": len(movies)
+            "actor": movies[0]["actor"],
+            "movies": [{k: v for k, v in m.items() if k != "actor" and k != "similarity"} for m in movies],
+            "count": len(movies),
+            "similarity": movies[0]["similarity"]
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.get("/movies/{title}/actors")
 def get_actors_by_movie(title: str):
-    """Lister tous les acteurs d'un film donné"""
+    """Lister tous les acteurs d'un film donné (fuzzy)"""
     try:
         with neo4j_conn.driver.session() as session:
-            result = session.run("""
-                MATCH (p:Person)-[r:ACTED_IN]->(m:Movie {title: $title})
-                RETURN p.name as name, r.roles as roles
-                ORDER BY name
-            """, title=title)
+            cypher = '''
+            MATCH (m:Movie)
+            WITH m, apoc.text.sorensenDiceSimilarity(toLower(m.title), toLower($title)) AS similarity
+            WHERE similarity > 0.5
+            WITH m, similarity
+            ORDER BY similarity DESC
+            LIMIT 1
+            MATCH (p:Person)-[r:ACTED_IN]->(m)
+            RETURN p.name as name, r.roles as roles, m.title as movie, similarity
+            ORDER BY name
+            '''
+            result = session.run(cypher, title=title)
             actors = [dict(record) for record in result]
+        if not actors:
+            return {"status": "error", "message": "Aucun acteur trouvé pour ce film"}
         return {
             "status": "success",
-            "movie": title,
-            "actors": actors,
-            "count": len(actors)
+            "movie": actors[0]["movie"],
+            "actors": [{k: v for k, v in a.items() if k != "movie" and k != "similarity"} for a in actors],
+            "count": len(actors),
+            "similarity": actors[0]["similarity"]
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 @app.get("/collaborations")
 def get_collaborations(person1: str, person2: str):
-    """Nombre de films en commun entre deux personnes (collaborations)"""
+    """Nombre de films en commun entre deux personnes (fuzzy)"""
     try:
         with neo4j_conn.driver.session() as session:
-            result = session.run("""
-                MATCH (p1:Person {name: $person1})-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(p2:Person {name: $person2})
-                RETURN collect(m.title) as movies, count(m) as collaborations
-            """, person1=person1, person2=person2)
+            cypher = '''
+            MATCH (p1:Person)
+            WITH p1, apoc.text.sorensenDiceSimilarity(toLower(p1.name), toLower($person1)) AS sim1
+            WHERE sim1 > 0.5
+            WITH p1, sim1
+            ORDER BY sim1 DESC
+            LIMIT 1
+            MATCH (p2:Person)
+            WITH p1, sim1, p2, apoc.text.sorensenDiceSimilarity(toLower(p2.name), toLower($person2)) AS sim2
+            WHERE sim2 > 0.5
+            WITH p1, sim1, p2, sim2
+            ORDER BY sim2 DESC
+            LIMIT 1
+            MATCH (p1)-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(p2)
+            RETURN collect(m.title) as movies, count(m) as collaborations, p1.name as person1, p2.name as person2, sim1, sim2
+            '''
+            result = session.run(cypher, person1=person1, person2=person2)
             record = result.single()
+            if not record or not record["person1"] or not record["person2"]:
+                return {"status": "error", "message": "Aucune collaboration trouvée"}
             return {
                 "status": "success",
-                "person1": person1,
-                "person2": person2,
+                "person1": record["person1"],
+                "person2": record["person2"],
                 "collaborations": record["collaborations"],
-                "movies": record["movies"]
+                "movies": record["movies"],
+                "similarity1": record["sim1"],
+                "similarity2": record["sim2"]
             }
     except Exception as e:
         return {"status": "error", "message": str(e)}
