@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { Box, AppBar, Toolbar, Typography, Tabs, Tab, Container } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Toaster } from 'react-hot-toast';
+import { theme } from './theme';
 import MovieList from './components/MovieList';
 import MovieDetails from './components/MovieDetails';
 import MovieSearch from './components/MovieSearch';
@@ -42,146 +47,165 @@ function App() {
     setSelectedMovie(null);
   };
 
+  const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
+    setActiveTab(newValue as typeof activeTab);
+  };
+
+  const tabs = [
+    { value: 'list', label: 'Liste des films', icon: '🎬' },
+    { value: 'search', label: 'Recherche', icon: '🔍' },
+    { value: 'recommendations', label: 'Recommandations', icon: '⭐' },
+    { value: 'persons', label: 'Acteurs', icon: '👥' },
+    { value: 'collaborations', label: 'Collaborations', icon: '🤝' },
+  ];
+
+  const adminTabs = [
+    { value: 'stats', label: 'Statistiques', icon: '📊' },
+    { value: 'devtools', label: 'Outils dev', icon: '⚙️' },
+    { value: 'health', label: 'État des services', icon: '🏥' },
+    { value: 'tester', label: 'Testeur API', icon: '🧪' },
+    { value: 'admin', label: 'Administration', icon: '👨‍💼' },
+  ];
+
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1>🎬 Movies Database</h1>
-            <p>Interface de gestion des films avec Neo4j</p>
-          </div>
-          <AuthHeader />
-        </div>
-      </header>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
+        <AppBar position="sticky" elevation={2}>
+          <Toolbar>
+            <Typography variant="h5" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+              🎬 Movies Database
+            </Typography>
+            <Typography variant="subtitle1" sx={{ mr: 2, opacity: 0.8 }}>
+              Interface de gestion des films avec Neo4j
+            </Typography>
+            <AuthHeader />
+          </Toolbar>
+        </AppBar>
 
-      <nav className="app-nav">
-        <button 
-          className={activeTab === 'list' ? 'nav-button active' : 'nav-button'}
-          onClick={() => setActiveTab('list')}
-        >
-          Liste des films
-        </button>
-        <button 
-          className={activeTab === 'search' ? 'nav-button active' : 'nav-button'}
-          onClick={() => setActiveTab('search')}
-        >
-          Recherche
-        </button>
-        <button 
-          className={activeTab === 'recommendations' ? 'nav-button active' : 'nav-button'}
-          onClick={() => setActiveTab('recommendations')}
-        >
-          Recommandations
-        </button>
-        <button 
-          className={activeTab === 'persons' ? 'nav-button active' : 'nav-button'}
-          onClick={() => setActiveTab('persons')}
-        >
-          Acteurs
-        </button>
-        <button 
-          className={activeTab === 'collaborations' ? 'nav-button active' : 'nav-button'}
-          onClick={() => setActiveTab('collaborations')}
-        >
-          Collaborations
-        </button>
-        <PermissionGate permission="admin">
-          <button 
-            className={activeTab === 'stats' ? 'nav-button active' : 'nav-button'}
-            onClick={() => setActiveTab('stats')}
+        <Container maxWidth="xl" sx={{ py: 2 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            Statistiques
-          </button>
-          <button 
-            className={activeTab === 'devtools' ? 'nav-button active' : 'nav-button'}
-            onClick={() => setActiveTab('devtools')}
-          >
-            Outils dev
-          </button>
-          <button 
-            className={activeTab === 'health' ? 'nav-button active' : 'nav-button'}
-            onClick={() => setActiveTab('health')}
-          >
-            État des services
-          </button>
-          <button 
-            className={activeTab === 'tester' ? 'nav-button active' : 'nav-button'}
-            onClick={() => setActiveTab('tester')}
-          >
-            Testeur API
-          </button>
-          <button 
-            className={activeTab === 'admin' ? 'nav-button active' : 'nav-button'}
-            onClick={() => setActiveTab('admin')}
-          >
-            Administration
-          </button>
-        </PermissionGate>
-      </nav>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+              <Tabs 
+                value={activeTab} 
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{ 
+                  '& .MuiTab-root': { 
+                    textTransform: 'none',
+                    minWidth: 120,
+                    fontSize: '0.95rem'
+                  }
+                }}
+              >
+                {tabs.map((tab) => (
+                  <Tab
+                    key={tab.value}
+                    value={tab.value}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                      </Box>
+                    }
+                  />
+                ))}
+                {adminTabs.map((tab) => (
+                  <Tab
+                    key={tab.value}
+                    value={tab.value}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                      </Box>
+                    }
+                    disabled={!isAdmin}
+                  />
+                ))}
+              </Tabs>
+            </Box>
 
-      <main className="app-main">
-        <ErrorBoundary fallback={SimpleErrorFallback}>
-          {activeTab === 'list' && (
-            <MovieList onMovieSelect={handleMovieSelect} />
-          )}
-          
-          {activeTab === 'search' && (
-            <MovieSearch onMovieFound={handleMovieFound} />
-          )}
-          
-          {activeTab === 'recommendations' && (
-            <RecommendationSearch />
-          )}
-          
-          {activeTab === 'persons' && (
-            <PersonPanel />
-          )}
-          
-          {activeTab === 'collaborations' && (
-            <CollaborationSearch />
-          )}
-          
-          {activeTab === 'stats' && (
-            <ProtectedRoute requireAdmin={true}>
-              <StatsPanel />
-            </ProtectedRoute>
-          )}
-          
-          {activeTab === 'devtools' && (
-            <ProtectedRoute requireAdmin={true}>
-              <DevTools onMovieSelect={handleMovieSelect} />
-            </ProtectedRoute>
-          )}
-          
-          {activeTab === 'health' && (
-            <ProtectedRoute requireAdmin={true}>
-              <HealthCheck />
-            </ProtectedRoute>
-          )}
-          
-          {activeTab === 'tester' && (
-            <ProtectedRoute requireAdmin={true}>
-              <ApiTester />
-            </ProtectedRoute>
-          )}
-          
-          {activeTab === 'admin' && (
-            <ProtectedRoute requireAdmin={true}>
-              <AdminPanel />
-            </ProtectedRoute>
-          )}
-        </ErrorBoundary>
-      </main>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ErrorBoundary fallback={SimpleErrorFallback}>
+                  {activeTab === 'list' && (
+                    <MovieList onMovieSelect={handleMovieSelect} />
+                  )}
+                  
+                  {activeTab === 'search' && (
+                    <MovieSearch onMovieFound={handleMovieFound} />
+                  )}
+                  
+                  {activeTab === 'recommendations' && (
+                    <RecommendationSearch />
+                  )}
+                  
+                  {activeTab === 'persons' && (
+                    <PersonPanel />
+                  )}
+                  
+                  {activeTab === 'collaborations' && (
+                    <CollaborationSearch />
+                  )}
+                  
+                  {activeTab === 'stats' && (
+                    <ProtectedRoute requireAdmin={true}>
+                      <StatsPanel />
+                    </ProtectedRoute>
+                  )}
+                  
+                  {activeTab === 'devtools' && (
+                    <ProtectedRoute requireAdmin={true}>
+                      <DevTools onMovieSelect={handleMovieSelect} />
+                    </ProtectedRoute>
+                  )}
+                  
+                  {activeTab === 'health' && (
+                    <ProtectedRoute requireAdmin={true}>
+                      <HealthCheck />
+                    </ProtectedRoute>
+                  )}
+                  
+                  {activeTab === 'tester' && (
+                    <ProtectedRoute requireAdmin={true}>
+                      <ApiTester />
+                    </ProtectedRoute>
+                  )}
+                  
+                  {activeTab === 'admin' && (
+                    <ProtectedRoute requireAdmin={true}>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  )}
+                </ErrorBoundary>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        </Container>
 
-      {selectedMovie && (
-        <ErrorBoundary fallback={SimpleErrorFallback}>
-          <MovieDetails 
-            movie={selectedMovie} 
-            onClose={closeMovieDetails}
-          />
-        </ErrorBoundary>
-      )}
-    </div>
+        {selectedMovie && (
+          <ErrorBoundary fallback={SimpleErrorFallback}>
+            <MovieDetails 
+              movie={selectedMovie} 
+              onClose={closeMovieDetails}
+            />
+          </ErrorBoundary>
+        )}
+      </Box>
+      <Toaster position="top-right" />
+    </ThemeProvider>
   );
 }
 

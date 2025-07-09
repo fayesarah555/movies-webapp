@@ -39,8 +39,8 @@ const MovieActors: React.FC = () => {
   return (
     <div className="movie-actors">
       <div className="panel">
-        <h2>🎬 Acteurs par film</h2>
-        <p>Recherchez tous les acteurs qui ont joué dans un film</p>
+        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>Acteurs de film</h2>
+        <p style={{ color: '#222', marginBottom: 24 }}>Liste des acteurs pour un film donné</p>
         
         <div className="search-section">
           <div className="form-group">

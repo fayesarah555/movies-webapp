@@ -24,8 +24,8 @@ const Neo4jTest: React.FC = () => {
   return (
     <div className="neo4j-test">
       <div className="panel">
-        <h2>🔧 Test de connexion Neo4j</h2>
-        <p>Testez la connexion à la base de données Neo4j</p>
+        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>Test Neo4j</h2>
+        <p style={{ color: '#222', marginBottom: 24 }}>Test de la connexion à la base Neo4j</p>
         
         <div className="test-actions">
           <button 
@@ -45,9 +45,9 @@ const Neo4jTest: React.FC = () => {
 
         {result && (
           <div className="result-section">
-            <h3>✅ Résultat du test</h3>
+            <h3 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>✅ Résultat du test</h3>
             <div className="result-content">
-              <pre>{JSON.stringify(result, null, 2)}</pre>
+              <pre style={{ color: '#222', background: '#f5f5f5', borderRadius: 6, padding: 12, fontSize: 15 }}>{JSON.stringify(result, null, 2)}</pre>
             </div>
           </div>
         )}

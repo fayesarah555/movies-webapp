@@ -28,8 +28,8 @@ const RootStatus: React.FC = () => {
   return (
     <div className="root-status">
       <div className="panel">
-        <h2>🏠 Status de l'API</h2>
-        <p>Informations sur l'API et sa disponibilité</p>
+        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>✅ Statut de l'API</h2>
+        <p style={{ color: '#222', marginBottom: 24 }}>Test de la route racine de l'API</p>
         
         <div className="status-actions">
           <button 
@@ -60,7 +60,7 @@ const RootStatus: React.FC = () => {
               {typeof result === 'string' ? (
                 <div className="status-message">{result}</div>
               ) : (
-                <pre>{JSON.stringify(result, null, 2)}</pre>
+                <pre style={{ color: '#222', background: '#f5f5f5', borderRadius: 6, padding: 12, fontSize: 15 }}>{JSON.stringify(result, null, 2)}</pre>
               )}
             </div>
           </div>

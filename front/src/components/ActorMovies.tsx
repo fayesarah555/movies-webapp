@@ -25,11 +25,18 @@ const ActorMovies: React.FC<ActorMoviesProps> = ({ onMovieSelect }) => {
 
     try {
       const response = await personApi.getMoviesByActor(actorName);
-      setMovies(response.movies);
+      // Correction : robustesse sur la réponse API
+      if (response && Array.isArray(response.movies)) {
+        setMovies(response.movies);
+      } else {
+        setMovies([]);
+        setError('Aucun film trouvé ou réponse inattendue de l\'API.');
+      }
       setSearchPerformed(true);
     } catch (err) {
       setError(handleApiError(err));
       setMovies([]);
+      setSearchPerformed(true); // Pour afficher le message "aucun film trouvé" si besoin
     } finally {
       setLoading(false);
     }
@@ -44,8 +51,8 @@ const ActorMovies: React.FC<ActorMoviesProps> = ({ onMovieSelect }) => {
   return (
     <div className="actor-movies">
       <div className="panel">
-        <h2>🎭 Films par acteur</h2>
-        <p>Recherchez tous les films dans lesquels un acteur a joué</p>
+        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>Films d'acteur</h2>
+        <p style={{ color: '#222', marginBottom: 24 }}>Liste des films pour un acteur donné</p>
         
         <div className="search-section">
           <div className="form-group">
