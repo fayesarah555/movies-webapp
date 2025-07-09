@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 import { api, handleApiError } from '../api';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
 
 const Neo4jTest: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -22,37 +30,44 @@ const Neo4jTest: React.FC = () => {
   };
 
   return (
-    <div className="neo4j-test">
-      <div className="panel">
-        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>Test Neo4j</h2>
-        <p style={{ color: '#222', marginBottom: 24 }}>Test de la connexion à la base Neo4j</p>
-        
-        <div className="test-actions">
-          <button 
+    <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 1, sm: 2, md: 4 } }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 3, mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #fff 100%)' }}>
+        <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, mb: 2 }}>
+          Test Neo4j
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+          Test de la connexion à la base Neo4j
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Button
+            variant="contained"
             onClick={testNeo4j}
             disabled={loading}
-            className="btn btn-primary"
+            sx={{ fontWeight: 600 }}
           >
-            {loading ? '🔄 Test en cours...' : '🚀 Tester Neo4j'}
-          </button>
-        </div>
-
+            {loading ? 'Test en cours...' : 'Tester Neo4j'}
+          </Button>
+        </Box>
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={40} />
+          </Box>
+        )}
         {error && (
-          <div className="error-message">
-            ❌ Erreur : {error}
-          </div>
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         )}
-
         {result && (
-          <div className="result-section">
-            <h3 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>✅ Résultat du test</h3>
-            <div className="result-content">
-              <pre style={{ color: '#222', background: '#f5f5f5', borderRadius: 6, padding: 12, fontSize: 15 }}>{JSON.stringify(result, null, 2)}</pre>
-            </div>
-          </div>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" sx={{ color: 'primary.dark', mb: 1 }}>
+              ✅ Résultat du test
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, overflowX: 'auto' }}>
+              <pre style={{ margin: 0, fontSize: 15 }}>{JSON.stringify(result, null, 2)}</pre>
+            </Paper>
+          </Box>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 };
 

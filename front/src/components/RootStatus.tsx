@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api, handleApiError } from '../api';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
 
 const RootStatus: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -26,47 +34,44 @@ const RootStatus: React.FC = () => {
   }, []);
 
   return (
-    <div className="root-status">
-      <div className="panel">
-        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>✅ Statut de l'API</h2>
-        <p style={{ color: '#222', marginBottom: 24 }}>Test de la route racine de l'API</p>
-        
-        <div className="status-actions">
-          <button 
+    <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 1, sm: 2, md: 4 } }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 3, mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #fff 100%)' }}>
+        <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, mb: 2 }}>
+          ✅ Statut de l'API
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+          Test de la route racine de l'API
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Button
+            variant="contained"
             onClick={fetchRootStatus}
             disabled={loading}
-            className="btn btn-secondary"
+            sx={{ fontWeight: 600 }}
           >
-            {loading ? '🔄 Actualisation...' : '🔄 Actualiser'}
-          </button>
-        </div>
-
+            {loading ? 'Actualisation...' : 'Actualiser'}
+          </Button>
+        </Box>
         {loading && (
-          <div className="loading-message">
-            ⏳ Chargement du statut...
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={40} />
+          </Box>
         )}
-
         {error && (
-          <div className="error-message">
-            ❌ Erreur : {error}
-          </div>
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         )}
-
         {result && (
-          <div className="result-section">
-            <h3>✅ Statut de l'API</h3>
-            <div className="status-info">
-              {typeof result === 'string' ? (
-                <div className="status-message">{result}</div>
-              ) : (
-                <pre style={{ color: '#222', background: '#f5f5f5', borderRadius: 6, padding: 12, fontSize: 15 }}>{JSON.stringify(result, null, 2)}</pre>
-              )}
-            </div>
-          </div>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" sx={{ color: 'primary.dark', mb: 1 }}>
+              ✅ Statut de l'API
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, overflowX: 'auto' }}>
+              <pre style={{ margin: 0, fontSize: 15 }}>{typeof result === 'string' ? result : JSON.stringify(result, null, 2)}</pre>
+            </Paper>
+          </Box>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 };
 

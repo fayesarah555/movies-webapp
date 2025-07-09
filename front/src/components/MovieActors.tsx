@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
 import { movieApi, handleApiError } from '../api';
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  Grid,
+} from '@mui/material';
 
 const MovieActors: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -37,72 +46,58 @@ const MovieActors: React.FC = () => {
   };
 
   return (
-    <div className="movie-actors">
-      <div className="panel">
-        <h2 style={{ color: '#1976d2', fontWeight: 700, marginBottom: 8 }}>Acteurs de film</h2>
-        <p style={{ color: '#222', marginBottom: 24 }}>Liste des acteurs pour un film donné</p>
-        
-        <div className="search-section">
-          <div className="form-group">
-            <label htmlFor="movieTitle">Titre du film :</label>
-            <input
-              type="text"
-              id="movieTitle"
-              value={movieTitle}
-              onChange={(e) => setMovieTitle(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ex: The Matrix, Forrest Gump..."
-              className="form-input"
-            />
-          </div>
-
-          <button 
+    <Box sx={{ maxWidth: 700, mx: 'auto', mt: 4, p: { xs: 1, sm: 2 } }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #fff 100%)' }}>
+        <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, mb: 2 }}>
+          Acteurs de film
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+          Liste des acteurs pour un film donné
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <TextField
+            label="Titre du film"
+            variant="outlined"
+            value={movieTitle}
+            onChange={e => setMovieTitle(e.target.value)}
+            onKeyPress={handleKeyPress}
+            fullWidth
+            autoFocus
+          />
+          <Button
+            variant="contained"
+            color="primary"
             onClick={searchMovieActors}
             disabled={loading || !movieTitle.trim()}
-            className="btn btn-primary"
+            sx={{ minWidth: 160, fontWeight: 600 }}
           >
-            {loading ? '🔄 Recherche...' : '🔍 Rechercher'}
-          </button>
-        </div>
-
+            {loading ? 'Recherche...' : 'Rechercher'}
+          </Button>
+        </Box>
         {error && (
-          <div className="error-message">
-            ❌ Erreur : {error}
-          </div>
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         )}
-
         {searchPerformed && actors.length === 0 && !loading && !error && (
-          <div className="no-results">
-            ℹ️ Aucun acteur trouvé pour "{movieTitle}"
-          </div>
+          <Alert severity="info" sx={{ mb: 2 }}>Aucun acteur trouvé pour "{movieTitle}"</Alert>
         )}
-
         {actors.length > 0 && (
-          <div className="actors-section">
-            <h3>🎭 Acteurs de "{movieTitle}" ({actors.length})</h3>
-            <div className="actors-grid">
-              {actors.map((actor) => (
-                <div key={actor.name} className="actor-card">
-                  <div className="actor-info">
-                    <h4>{actor.name}</h4>
-                    {actor.roles && actor.roles.length > 0 && (
-                      <div className="actor-roles">
-                        <span className="roles-label">Rôles :</span>
-                        <ul>
-                          {actor.roles.map((role, index) => (
-                            <li key={index}>{role}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
+          <Box sx={{ mt: 3 }}>
+            <Grid container spacing={2}>
+              {actors.map((actor, idx) => (
+                <Grid item xs={12} sm={6} key={idx}>
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'primary.main' }}>{actor.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Rôles : {actor.roles.join(', ')}
+                    </Typography>
+                  </Paper>
+                </Grid>
               ))}
-            </div>
-          </div>
+            </Grid>
+          </Box>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 };
 

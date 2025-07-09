@@ -80,173 +80,81 @@ const MovieList: React.FC<MovieListProps> = ({ onMovieSelect }) => {
     loadMovies(0);
   };
 
-  if (loading && movies.length === 0) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MovieIcon color="primary" />
-            Films
-          </Typography>
-          <Skeleton variant="rectangular" width={120} height={36} />
-        </Box>
-        <Box sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-          gap: 3 
-        }}>
-          {[...Array(8)].map((_, index) => (
-            <Card key={index}>
-              <CardContent>
-                <Skeleton variant="text" height={32} />
-                <Skeleton variant="text" height={20} sx={{ mt: 1 }} />
-                <Skeleton variant="text" height={16} sx={{ mt: 1 }} />
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert 
-          severity="error" 
-          action={
-            <Button color="inherit" size="small" onClick={refresh}>
-              Réessayer
-            </Button>
-          }
-        >
-          {error}
-        </Alert>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ p: 3 }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MovieIcon color="primary" />
-            Liste des films
-            <Chip label={movies.length} color="primary" size="small" sx={{ color: 'white', bgcolor: 'primary.main' }} />
-          </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={refresh}
-            disabled={loading}
-          >
-            Actualiser
-          </Button>
-        </Box>
-      </motion.div>
-      
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-        gap: 3 
-      }}>
-        <AnimatePresence>
-          {movies.map((movie, index) => (
-            <motion.div
-              key={`${movie.title}-${index}`}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Card 
-                sx={{ 
-                  height: '100%', 
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: (theme) => theme.shadows[8],
-                    transform: 'translateY(-2px)'
-                  }
-                }}
-                onClick={() => onMovieSelect?.(movie)}
-              >
-                <CardContent>
-                  <Typography 
-                    variant="h6" 
-                    component="h3" 
-                    sx={{ 
-                      mb: 1,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {movie.title}
-                  </Typography>
-                  
-                  {movie.released && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                      <DateRange fontSize="small" color="action" />
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        {movie.released}
-                      </Typography>
-                    </Box>
-                  )}
-                  
-                  {movie.tagline && (
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary"
-                      sx={{ 
-                        fontStyle: 'italic',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      "{movie.tagline}"
-                    </Typography>
-                  )}
-                  
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                    <IconButton size="small" color="primary">
-                      <PlayArrow />
-                    </IconButton>
-                  </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 2, md: 4 } }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: { xs: 2, sm: 0 }, mb: 3 }}>
+        <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, mb: { xs: 2, sm: 0 } }}>
+          <MovieIcon sx={{ mr: 1 }} /> Liste des films
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<Refresh />}
+          onClick={refresh}
+          disabled={loading}
+          sx={{ color: 'primary.main', borderColor: 'primary.main', bgcolor: 'background.paper', '&:hover': { bgcolor: 'primary.light', color: 'white' } }}
+        >
+          {loading ? <CircularProgress size={16} /> : 'Actualiser'}
+        </Button>
       </Box>
-      
-      {hasMore && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Button
-            variant="contained"
-            onClick={loadMore}
-            disabled={loading}
-            size="large"
-            sx={{ minWidth: 200 }}
-          >
-            {loading ? (
-              <>
-                <CircularProgress size={20} sx={{ mr: 1 }} />
-                Chargement...
-              </>
-            ) : (
-              'Charger plus'
-            )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+      )}
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+        gap: 2,
+        mb: 3
+      }}>
+        {loading && movies.length === 0 ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} variant="rectangular" height={180} sx={{ borderRadius: 2 }} />
+          ))
+        ) : (
+          <AnimatePresence>
+            {movies.map((movie) => (
+              <motion.div
+                key={movie.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                style={{ display: 'flex' }}
+              >
+                <Card sx={{ width: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column', minHeight: 180 }}>
+                  <CardContent>
+                    <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', mb: 1 }}>
+                      {movie.title}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Chip icon={<DateRange />} label={movie.released} size="small" color="primary" variant="outlined" />
+                    </Box>
+                    {movie.tagline && (
+                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 1 }}>
+                        "{movie.tagline}"
+                      </Typography>
+                    )}
+                    {onMovieSelect && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => onMovieSelect(movie)}
+                        sx={{ mt: 1 }}
+                        endIcon={<PlayArrow />}
+                      >
+                        Voir détails
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
+      </Box>
+      {hasMore && !loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <Button variant="contained" onClick={loadMore} sx={{ fontWeight: 600 }}>
+            Charger plus
           </Button>
         </Box>
       )}

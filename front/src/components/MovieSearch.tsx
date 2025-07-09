@@ -131,16 +131,15 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 1, sm: 2, md: 4 } }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Search color="primary" />
-            Recherche de films
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: { xs: 2, sm: 0 }, mb: 3 }}>
+          <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, mb: { xs: 2, sm: 0 } }}>
+            <MovieIcon sx={{ mr: 1 }} /> Recherche de films
             <Chip label={searchResults.length} color="primary" size="small" sx={{ color: 'white', bgcolor: 'primary.main' }} />
           </Typography>
           {isAdmin && (
@@ -161,48 +160,44 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
         </Box>
 
         {/* Formulaire de recherche */}
-        <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-          <Box component="form" onSubmit={handleSearch} sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher un film..."
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchTerm && (
-                  <InputAdornment position="end">
-                    <IconButton onClick={clearSearch} size="small">
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                }
-              }}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loading || !searchTerm.trim()}
-              sx={{ 
-                minWidth: 120,
+        <Box component="form" onSubmit={handleSearch} sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
+          <TextField
+            label="Titre du film"
+            variant="outlined"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            fullWidth
+            autoFocus
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton onClick={clearSearch} size="small">
+                    <Clear />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
-                textTransform: 'none'
-              }}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Rechercher'}
-            </Button>
-          </Box>
-        </Paper>
+              }
+            }}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={loading}
+            sx={{ minWidth: 160, fontWeight: 600 }}
+          >
+            {loading ? <CircularProgress size={20} color="inherit" /> : 'Rechercher'}
+          </Button>
+        </Box>
 
         {/* Erreur */}
         {error && (
@@ -211,7 +206,7 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           </motion.div>
@@ -230,117 +225,55 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
               <Chip label={searchResults.length} color="primary" size="small" />
             </Typography>
             
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-              gap: 3 
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+              gap: 2,
+              mb: 3
             }}>
-              <AnimatePresence>
-                {searchResults.map((movie, index) => (
-                  <motion.div
-                    key={`${movie.title}-${index}`}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card 
-                      elevation={3}
-                      sx={{ 
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          boxShadow: theme.shadows[8],
-                          transform: 'translateY(-2px)'
-                        }
-                      }}
+              {loading && searchResults.length === 0 ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} sx={{ borderRadius: 2, minHeight: 180, opacity: 0.5 }} />
+                ))
+              ) : (
+                <AnimatePresence>
+                  {searchResults.map((movie) => (
+                    <motion.div
+                      key={movie.title}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.4 }}
+                      style={{ display: 'flex' }}
                     >
-                      <CardContent 
-                        sx={{ 
-                          flexGrow: 1, 
-                          cursor: 'pointer',
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.05)
-                          }
-                        }}
-                        onClick={() => onMovieFound(movie)}
-                      >
-                        <Typography 
-                          variant="h6" 
-                          component="h3" 
-                          sx={{ 
-                            mb: 1,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          {movie.title}
-                        </Typography>
-                        
-                        {movie.released && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                            <DateRange fontSize="small" color="action" />
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              {movie.released}
-                            </Typography>
-                          </Box>
-                        )}
-                        
-                        {movie.tagline && (
-                          <Typography 
-                            variant="body2" 
-                            color="text.secondary"
-                            sx={{ 
-                              fontStyle: 'italic',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden'
-                            }}
-                          >
-                            "{movie.tagline}"
+                      <Card sx={{ width: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column', minHeight: 180 }}>
+                        <CardContent>
+                          <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', mb: 1 }}>
+                            {movie.title}
                           </Typography>
-                        )}
-                      </CardContent>
-                      
-                      <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-                        <IconButton size="small" color="primary" onClick={() => onMovieFound(movie)}>
-                          <PlayArrow />
-                        </IconButton>
-                        
-                        {isAdmin && (
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="Modifier">
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => handleEditMovie(movie)}
-                              >
-                                <Edit />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Supprimer">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => setDeleteConfirm(movie.title)}
-                              >
-                                <Delete />
-                              </IconButton>
-                            </Tooltip>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Chip icon={<DateRange />} label={movie.released} size="small" color="primary" variant="outlined" />
                           </Box>
-                        )}
-                      </CardActions>
-                    </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                          {movie.tagline && (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 1 }}>
+                              "{movie.tagline}"
+                            </Typography>
+                          )}
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => onMovieFound(movie)}
+                            sx={{ mt: 1 }}
+                            endIcon={<PlayArrow />}
+                          >
+                            Voir détails
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
             </Box>
           </motion.div>
         )}

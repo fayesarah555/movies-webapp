@@ -172,20 +172,27 @@ const AdminPanel: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.primary' }}>
+        <Box sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', sm: 'center' },
+          mb: 3,
+          gap: { xs: 2, sm: 0 }
+        }}>
+          <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.primary', flexWrap: 'wrap' }}>
             <AdminPanelSettings color="primary" />
             Panel d'administration
             <Chip label={movies.length} color="primary" size="small" sx={{ color: 'white', bgcolor: 'primary.main' }} />
             {loading && <CircularProgress size={20} />}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: { xs: 2, sm: 0 } }}>
             <Button
               variant="outlined"
               startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon />}
@@ -248,7 +255,9 @@ const AdminPanel: React.FC = () => {
               elevation={2}
               sx={{ 
                 borderRadius: 2,
-                overflow: 'hidden',
+                overflow: 'auto',
+                maxWidth: '100%',
+                minWidth: 0,
                 '& .MuiTableCell-head': {
                   backgroundColor: theme.palette.primary.main,
                   color: theme.palette.primary.contrastText,
@@ -403,9 +412,10 @@ const AdminPanel: React.FC = () => {
             onClick={handleCreateMovie}
             sx={{
               position: 'fixed',
-              bottom: 24,
-              right: 24,
+              bottom: { xs: 16, sm: 24 },
+              right: { xs: 16, sm: 24 },
               background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              zIndex: 1200,
               '&:hover': {
                 background: 'linear-gradient(45deg, #1976D2 30%, #0097A7 90%)',
                 transform: 'scale(1.1)'

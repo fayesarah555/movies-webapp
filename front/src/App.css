@@ -232,7 +232,7 @@ body {
 }
 
 .movie-details-header h2 {
-  color: #333;
+  color: #111;
   font-size: 1.5rem;
 }
 
@@ -256,18 +256,18 @@ body {
 .movie-details-content .movie-title {
   font-size: 2rem;
   margin-bottom: 1rem;
-  color: #333;
+  color: #111;
 }
 
 .movie-details-content .movie-year {
   font-size: 1.1rem;
-  color: #666;
+  color: #444;
   margin-bottom: 1rem;
 }
 
 .movie-details-content .movie-tagline {
   font-size: 1rem;
-  color: #888;
+  color: #555;
   font-style: italic;
   margin-bottom: 2rem;
 }
@@ -281,7 +281,7 @@ body {
 .movie-directors h4,
 .movie-producers h4,
 .movie-cast h4 {
-  color: #333;
+  color: #111;
   margin-bottom: 1rem;
   font-size: 1.2rem;
 }
@@ -296,31 +296,32 @@ body {
 .movie-producers li {
   padding: 0.5rem 0;
   border-bottom: 1px solid #f0f0f0;
+  color: #222;
+  font-size: 1.08rem;
+  background: none;
 }
 
-.cast-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+/* Panel avis : contraste renforcé */
+.review-panel {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: #181818;
 }
-
-.cast-member {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 5px;
-  border-left: 4px solid #667eea;
+.review-header h3 {
+  color: #111;
 }
-
-.actor-name {
-  font-weight: 600;
-  color: #333;
-  display: block;
-  margin-bottom: 0.25rem;
+.review-item .review-header {
+  color: #181818;
 }
-
-.actor-roles {
-  color: #666;
-  font-size: 0.9rem;
+.review-comment {
+  color: #222;
+  font-size: 1.08rem;
+}
+.no-reviews {
+  color: #444;
 }
 
 /* Recommendations */
@@ -355,12 +356,12 @@ body {
 }
 
 .recommendation-card h5 {
-  color: #333;
+  color: #111;
   margin-bottom: 0.5rem;
 }
 
 .recommendation-card p {
-  color: #666;
+  color: #444;
   font-size: 0.9rem;
 }
 
@@ -1346,6 +1347,7 @@ body {
   padding: 1.5rem;
   margin: 2rem 0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  color: #181818;
 }
 
 .review-header {
@@ -1408,6 +1410,7 @@ body {
   margin-bottom: 0.5rem;
   border-bottom: none;
   padding-bottom: 0;
+  color: #181818;
 }
 
 .review-rating {
@@ -1429,7 +1432,8 @@ body {
 }
 
 .review-comment {
-  color: #2c3e50;
+  color: #222;
+  font-size: 1.08rem;
   line-height: 1.6;
   margin-top: 0.5rem;
 }
@@ -1438,6 +1442,7 @@ body {
   text-align: center;
   color: #7f8c8d;
   padding: 2rem;
+  color: #444;
 }
 
 /* === COLLABORATION SEARCH === */
@@ -2117,4 +2122,33 @@ body {
   .person-actions .btn-small {
     width: 100%;
   }
+}
+
+.cast-member {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 5px;
+  border-left: 4px solid #667eea;
+  color: #181818;
+  font-size: 1.08rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.actor-name {
+  font-weight: 600;
+  color: #111;
+  display: block;
+  margin-bottom: 0.25rem;
+  word-break: break-word;
+}
+
+.actor-roles {
+  color: #444;
+  font-size: 0.98rem;
+  margin-left: 0.25rem;
+  word-break: break-word;
 }
