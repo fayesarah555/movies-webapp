@@ -73,6 +73,9 @@ Cette API REST permet de gérer une base de films et de personnes (acteurs, réa
 - `POST /login` : connexion utilisateur (JWT)
 - `POST /reviews` : laisser un avis sur un film (authentifié)
 - `GET /reviews/{movie_title}` : consulter les avis d’un film
+- `GET /actors/{name}/movies` : liste des films d’un acteur
+- `GET /movies/{title}/actors` : liste des acteurs d’un film
+- `GET /collaborations?person1=...&person2=...` : collaborations entre deux personnes (nombre de films en commun)
 
 ## Exemples d'utilisation des routes
 
@@ -181,6 +184,56 @@ Header : `Authorization: Bearer <token>`
 **GET /movies/The Matrix**
 **GET /persons/Keanu Reeves**
 
+### 13. Tous les films d’un acteur
+
+**GET /actors/Keanu Reeves/movies**
+
+Réponse :
+```json
+{
+  "status": "success",
+  "actor": "Keanu Reeves",
+  "movies": [
+    {"title": "The Matrix", "released": 1999, "roles": ["Neo"]},
+    ...
+  ],
+  "count": 5
+}
+```
+
+### 14. Tous les acteurs d’un film
+
+**GET /movies/The Matrix/actors**
+
+Réponse :
+```json
+{
+  "status": "success",
+  "movie": "The Matrix",
+  "actors": [
+    {"name": "Keanu Reeves", "roles": ["Neo"]},
+    {"name": "Laurence Fishburne", "roles": ["Morpheus"]},
+    ...
+  ],
+  "count": 3
+}
+```
+
+### 15. Collaborations entre deux personnes
+
+**GET /collaborations?person1=Keanu Reeves&person2=Laurence Fishburne**
+
+Réponse :
+```json
+{
+  "status": "success",
+  "person1": "Keanu Reeves",
+  "person2": "Laurence Fishburne",
+  "collaborations": 3,
+  "movies": ["The Matrix", "The Matrix Reloaded", "The Matrix Revolutions"]
+}
+```
+
 ---
 
 Chaque requête nécessitant un token doit inclure le header :
@@ -209,6 +262,16 @@ Pour tester rapidement, utilisez Swagger UI sur `/docs`.
   - Obtention d’un JWT
   - Respect des droits selon le rôle
   - Tous les endpoints CRUD, recherche, avis, statistiques
+
+## Exécution de tous les tests
+
+Pour lancer tous les tests automatiquement (quel que soit le dossier courant), utilisez le script fourni à la racine du projet :
+
+```bash
+python run_all_tests.py
+```
+
+Ce script exécute tous les tests Pytest du dossier `simple-fastapi` et affiche un résumé global.
 
 ## Sécurité
 - Les mots de passe sont hashés (bcrypt) et jamais stockés en clair.

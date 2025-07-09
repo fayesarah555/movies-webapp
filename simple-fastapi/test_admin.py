@@ -20,7 +20,9 @@ def admin_token():
 
 def test_create_movie(admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
-    data = {"title": "Test Movie", "released": 2025, "tagline": "Test tagline"}
+    # Utiliser un titre unique pour chaque test
+    unique_title = f"Test Movie {int(time.time() * 1000)}"
+    data = {"title": unique_title, "released": 2025, "tagline": "Test tagline"}
     resp = httpx.post(f"{BASE_URL}/movies", json=data, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
@@ -42,6 +44,13 @@ def test_create_person(admin_token):
 
 def test_add_actor_to_movie(admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
+    # S'assurer que le film existe
+    movie_data = {"title": "Test Movie", "released": 2025, "tagline": "Test tagline"}
+    httpx.post(f"{BASE_URL}/movies", json=movie_data, headers=headers)
+    # S'assurer que la personne existe
+    person_data = {"name": "Test Person", "born": 1990}
+    httpx.post(f"{BASE_URL}/persons", json=person_data, headers=headers)
+    # Ajouter l'acteur au film
     data = {"name": "Test Person", "roles": ["Neo"]}
     resp = httpx.post(f"{BASE_URL}/movies/Test Movie/actors", json=data, headers=headers)
     assert resp.status_code == 200

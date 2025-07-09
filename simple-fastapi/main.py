@@ -519,3 +519,63 @@ def get_reviews(movie_title: str):
         """, movie_title=movie_title)
         reviews = [dict(record) for record in result]
     return {"reviews": reviews, "count": len(reviews)}
+
+@app.get("/actors/{name}/movies")
+def get_movies_by_actor(name: str):
+    """Lister tous les films d'un acteur donné"""
+    try:
+        with neo4j_conn.driver.session() as session:
+            result = session.run("""
+                MATCH (p:Person {name: $name})- [r:ACTED_IN]->(m:Movie)
+                RETURN m.title as title, m.released as released, r.roles as roles
+                ORDER BY m.released DESC
+            """, name=name)
+            movies = [dict(record) for record in result]
+        return {
+            "status": "success",
+            "actor": name,
+            "movies": movies,
+            "count": len(movies)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/movies/{title}/actors")
+def get_actors_by_movie(title: str):
+    """Lister tous les acteurs d'un film donné"""
+    try:
+        with neo4j_conn.driver.session() as session:
+            result = session.run("""
+                MATCH (p:Person)-[r:ACTED_IN]->(m:Movie {title: $title})
+                RETURN p.name as name, r.roles as roles
+                ORDER BY name
+            """, title=title)
+            actors = [dict(record) for record in result]
+        return {
+            "status": "success",
+            "movie": title,
+            "actors": actors,
+            "count": len(actors)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/collaborations")
+def get_collaborations(person1: str, person2: str):
+    """Nombre de films en commun entre deux personnes (collaborations)"""
+    try:
+        with neo4j_conn.driver.session() as session:
+            result = session.run("""
+                MATCH (p1:Person {name: $person1})-[:ACTED_IN]->(m:Movie)<-[:ACTED_IN]-(p2:Person {name: $person2})
+                RETURN collect(m.title) as movies, count(m) as collaborations
+            """, person1=person1, person2=person2)
+            record = result.single()
+            return {
+                "status": "success",
+                "person1": person1,
+                "person2": person2,
+                "collaborations": record["collaborations"],
+                "movies": record["movies"]
+            }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
