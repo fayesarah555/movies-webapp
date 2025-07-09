@@ -10,12 +10,13 @@ Cette API REST permet de gérer une base de films et de personnes (acteurs, réa
 - Inscription et connexion des utilisateurs (stockés dans Neo4j, avec rôle user/admin)
 - Gestion des avis utilisateurs sur les films
 - Tests automatisés séparés pour les rôles admin et user
+- **Robustesse des tests admin** : tous les tests CRUD admin utilisent désormais un titre unique partagé pour garantir que la création, la mise à jour et la suppression d’un film concernent bien le même objet (voir section Tests automatisés).
 
 ## Fonctionnalités principales
 
 - **CRUD Films** : Créer, lire, mettre à jour, supprimer des films (**admin uniquement**)
 - **CRUD Personnes** : Créer, lire des personnes, lister leur filmographie (**admin uniquement pour la création**)
-- **Recherche** : Rechercher des films par titre
+- **Recherche** : Rechercher des films par titre (fuzzy/tolérant pour GET, exact pour PUT/DELETE)
 - **Statistiques** : Nombre de films, personnes, relations, dernier film ajouté
 - **Avis** : Laisser et consulter des avis sur les films (tous utilisateurs)
 - **Authentification** :
@@ -126,6 +127,8 @@ Header : `Authorization: Bearer <token_admin>`
   "tagline": "Nouveau slogan"
 }
 ```
+
+> ⚠️ **Remarque** : Le titre utilisé dans l’URL doit être strictement identique à celui utilisé lors de la création du film (casse, espaces, etc.). Contrairement à la recherche (GET), l’update (PUT) ne fait pas de recherche fuzzy/tolérante.
 
 ### 5. Supprimer un film (admin uniquement)
 
@@ -248,6 +251,7 @@ Pour tester rapidement, utilisez Swagger UI sur `/docs`.
 - **Tests séparés par rôle** :
   - `test_user.py` : tout ce qu’un utilisateur normal peut faire (lecture, recherche, avis, interdiction du CRUD)
   - `test_admin.py` : tout ce qu’un admin peut faire (CRUD complet, ajout d’acteur, etc.)
+    - **Robustesse** : tous les tests CRUD admin utilisent un titre unique partagé (fixture) pour garantir la cohérence entre création, update et suppression. Cela évite les erreurs dues à des titres différents ou à la recherche exacte lors de l’update.
 - **Test de connexion Neo4j** :
   - `test_neo4j.py` : vérifie la connexion à Neo4j, la santé de l’API, les stats, la liste et la recherche de films
 - Lancer tous les tests :
@@ -295,5 +299,6 @@ simple-fastapi/
 - Pour réinitialiser les utilisateurs, il suffit de supprimer les nœuds `:User` dans Neo4j.
 - Les avis sont stockés comme relations `RATED` entre User et Movie (1 avis par user/film).
 - Le projet est prêt pour une extension future (suppression d’avis, rôles multiples, etc.).
+- **Attention** : la recherche de film par titre (`GET /movies/{title}`) est tolérante (fuzzy), mais la mise à jour (`PUT /movies/{title}`) et la suppression (`DELETE /movies/{title}`) nécessitent un titre strictement identique à celui stocké dans la base.
 
 ---
