@@ -75,6 +75,8 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
     if (searchResults.length > 0) {
       handleSearch(new Event('submit') as any);
     }
+    // Optionnel : notifier le parent du nouveau film
+    console.log('Film sauvegardé:', movie.title);
   };
 
   const handleCancelEdit = () => {
@@ -99,7 +101,7 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
       {showCreateForm && (
         <div className="form-overlay">
           <MovieForm
-            onSave={handleSaveMovie}
+            onSubmit={handleSaveMovie}
             onCancel={handleCancelEdit}
           />
         </div>
@@ -109,7 +111,7 @@ const MovieSearch: React.FC<MovieSearchProps> = ({ onMovieFound }) => {
         <div className="form-overlay">
           <MovieForm
             movie={editingMovie}
-            onSave={handleSaveMovie}
+            onSubmit={handleSaveMovie}
             onCancel={handleCancelEdit}
           />
         </div>

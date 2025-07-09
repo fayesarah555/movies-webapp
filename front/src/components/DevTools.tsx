@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Neo4jTest from './Neo4jTest';
-import ItemTester from './ItemTester';
 import RootStatus from './RootStatus';
 import ActorMovies from './ActorMovies';
 import MovieActors from './MovieActors';
@@ -40,12 +39,6 @@ const DevTools: React.FC<DevToolsProps> = ({ onMovieSelect }) => {
             Test Neo4j
           </button>
           <button 
-            className={activeSubTab === 'items' ? 'sub-nav-button active' : 'sub-nav-button'}
-            onClick={() => setActiveSubTab('items')}
-          >
-            Test Items
-          </button>
-          <button 
             className={activeSubTab === 'actor-movies' ? 'sub-nav-button active' : 'sub-nav-button'}
             onClick={() => setActiveSubTab('actor-movies')}
           >
@@ -63,7 +56,6 @@ const DevTools: React.FC<DevToolsProps> = ({ onMovieSelect }) => {
           {activeSubTab === 'all-routes' && <AllRoutesTester />}
           {activeSubTab === 'root' && <RootStatus />}
           {activeSubTab === 'neo4j' && <Neo4jTest />}
-          {activeSubTab === 'items' && <ItemTester />}
           {activeSubTab === 'actor-movies' && <ActorMovies onMovieSelect={onMovieSelect} />}
           {activeSubTab === 'movie-actors' && <MovieActors />}
         </div>
