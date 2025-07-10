@@ -121,6 +121,16 @@ const MovieList: React.FC<MovieListProps> = ({ onMovieSelect }) => {
                 style={{ display: 'flex' }}
               >
                 <Card sx={{ width: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column', minHeight: 180 }}>
+                  {movie.imageUrl && (
+                    <Box sx={{ width: '100%', height: 180, overflow: 'hidden', borderTopLeftRadius: 8, borderTopRightRadius: 8, mb: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img
+                        src={movie.imageUrl}
+                        alt={movie.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}
+                        loading="lazy"
+                      />
+                    </Box>
+                  )}
                   <CardContent>
                     <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', mb: 1 }}>
                       {movie.title}

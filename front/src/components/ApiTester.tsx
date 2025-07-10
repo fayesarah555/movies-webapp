@@ -256,7 +256,12 @@ const ApiTester: React.FC = () => {
                         fontSize: '0.875rem',
                         fontFamily: 'monospace',
                         whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word'
+                        wordBreak: 'break-word',
+                        color: (theme) => theme.palette.mode === 'dark' ? '#fff' : '#222',
+                        background: (theme) => theme.palette.mode === 'dark' ? '#222' : '#f5f5f5',
+                        borderRadius: 1,
+                        p: 2,
+                        boxShadow: 0,
                       }}
                     >
                       {JSON.stringify(results.result, null, 2)}

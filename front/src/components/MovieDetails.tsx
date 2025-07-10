@@ -148,6 +148,17 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
             <ReviewPanel movieTitle={detailedMovie.title} />
           </div>
         )}
+        
+        {detailedMovie?.imageUrl && (
+          <div style={{ width: '100%', maxWidth: 400, margin: '0 auto 1.5rem auto', textAlign: 'center' }}>
+            <img
+              src={detailedMovie.imageUrl}
+              alt={detailedMovie.title}
+              style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}
+              loading="lazy"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

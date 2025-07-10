@@ -46,7 +46,7 @@ def get_all_movies(limit: int = 20, skip: int = 0):
         with neo4j_conn.driver.session() as session:
             result = session.run("""
                 MATCH (m:Movie)
-                RETURN m.title as title, m.released as released, m.tagline as tagline
+                RETURN m.title as title, m.released as released, m.tagline as tagline, m.imageUrl as imageUrl
                 ORDER BY m.released DESC
                 SKIP $skip LIMIT $limit
             """, skip=skip, limit=limit)
@@ -66,7 +66,7 @@ def get_movie_by_title(title: str):
             OPTIONAL MATCH (p:Person)-[r:ACTED_IN]->(m)
             OPTIONAL MATCH (d:Person)-[:DIRECTED]->(m)
             OPTIONAL MATCH (prod:Person)-[:PRODUCED]->(m)
-            RETURN m.title as title, m.released as released, m.tagline as tagline,
+            RETURN m.title as title, m.released as released, m.tagline as tagline, m.imageUrl as imageUrl,
                    collect(DISTINCT {name: p.name, roles: r.roles}) as actors,
                    collect(DISTINCT d.name) as directors,
                    collect(DISTINCT prod.name) as producers,
@@ -83,6 +83,7 @@ def get_movie_by_title(title: str):
                 "title": record["title"],
                 "released": record["released"],
                 "tagline": record["tagline"],
+                "imageUrl": record["imageUrl"],
                 "actors": [a for a in record["actors"] if a["name"]],
                 "directors": [d for d in record["directors"] if d],
                 "producers": [p for p in record["producers"] if p],
@@ -97,6 +98,7 @@ def create_movie(movie_data: dict, username: str = Depends(verify_admin)):
         title = movie_data.get("title")
         released = movie_data.get("released")
         tagline = movie_data.get("tagline", "")
+        imageUrl = movie_data.get("imageUrl", "")
         directors = movie_data.get("directors", [])
         producers = movie_data.get("producers", [])
         actors = movie_data.get("actors", [])
@@ -107,9 +109,9 @@ def create_movie(movie_data: dict, username: str = Depends(verify_admin)):
             if existing.single():
                 return {"status": "error", "message": "Film déjà existant"}
             session.run("""
-                CREATE (m:Movie {title: $title, released: $released, tagline: $tagline})
+                CREATE (m:Movie {title: $title, released: $released, tagline: $tagline, imageUrl: $imageUrl})
                 RETURN m
-            """, title=title, released=released, tagline=tagline)
+            """, title=title, released=released, tagline=tagline, imageUrl=imageUrl)
             for director in directors:
                 if director.strip():
                     session.run("""
@@ -157,6 +159,9 @@ def update_movie(title: str, movie_data: dict, username: str = Depends(verify_ad
             if "tagline" in movie_data:
                 set_clauses.append("m.tagline = $tagline")
                 params["tagline"] = movie_data["tagline"]
+            if "imageUrl" in movie_data:
+                set_clauses.append("m.imageUrl = $imageUrl")
+                params["imageUrl"] = movie_data["imageUrl"]
             if set_clauses:
                 query = f"MATCH (m:Movie {{title: $title}}) SET {', '.join(set_clauses)} RETURN m"
                 session.run(query, **params)

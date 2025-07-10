@@ -32,6 +32,9 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { statsApi, handleApiError } from '../api';
 import type { DatabaseStats } from '../api';
+import {
+  BarChart as ReBarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 
 const StatsPanel: React.FC = () => {
   const [stats, setStats] = useState<DatabaseStats | null>(null);
@@ -182,6 +185,7 @@ const StatsPanel: React.FC = () => {
         </Box>
       )}
       {!loading && !error && stats && (
+        <>
         <Box sx={{ display: 'flex', gap: 3, mt: 4 }}>
           {statCards.map((stat, index) => (
             <Card key={stat.title} sx={{ minWidth: 180, flex: 1, background: stat.bgColor, borderLeft: `6px solid ${stat.color}`, boxShadow: theme.shadows[2], transition: 'all 0.3s', '&:hover': { boxShadow: theme.shadows[8], transform: 'translateY(-4px)' } }}>
@@ -209,6 +213,22 @@ const StatsPanel: React.FC = () => {
             </Card>
           ))}
         </Box>
+        {/* Ajout du graphe */}
+        <Box sx={{ mt: 6, height: 350, background: alpha(theme.palette.background.paper, 0.7), borderRadius: 3, boxShadow: theme.shadows[1], p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+            Statistiques globales (graphe)
+          </Typography>
+          <ResponsiveContainer width="100%" height={300}>
+            <ReBarChart data={statCards} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="title" />
+              <YAxis allowDecimals={false} />
+              <RechartsTooltip />
+              <Bar dataKey="value" fill={theme.palette.primary.main} radius={[8, 8, 0, 0]} />
+            </ReBarChart>
+          </ResponsiveContainer>
+        </Box>
+        </>
       )}
     </Box>
   );

@@ -126,6 +126,16 @@ const RecommendationSearch: React.FC<RecommendationSearchProps> = ({ className =
                     <Grid item xs={12} sm={6} md={4} key={idx}>
                       <Card elevation={2} sx={{ borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
                         <CardContent>
+                          {rec.imageUrl && (
+                            <Box sx={{ width: '100%', height: 180, overflow: 'hidden', borderRadius: 2, mb: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <img
+                                src={rec.imageUrl}
+                                alt={rec.title}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                                loading="lazy"
+                              />
+                            </Box>
+                          )}
                           <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', mb: 1 }}>
                             {rec.title}
                           </Typography>

@@ -50,6 +50,7 @@ export interface Movie {
   title: string;
   released: number;
   tagline: string;
+  imageUrl?: string;
   actors?: Array<{name: string; roles: string[]}>;
   directors?: string[];
   producers?: string[];
@@ -233,7 +234,7 @@ export const personApi = {
 
   // Obtenir les films d'un acteur
   getMoviesByActor: async (name: string): Promise<{status: string; actor: string; movies: Movie[]; count: number}> => {
-    const response = await api.get(`/actors/${encodeURIComponent(name)}/movies`);
+    const response = await api.get(`/persons/actors/${encodeURIComponent(name)}/movies`);
     return response.data;
   }
 };
@@ -315,7 +316,7 @@ export const itemsApi = {
 // API pour les films par acteur
 export const actorMoviesApi = {
   getMoviesByActor: async (actorName: string) => {
-    const response = await api.get(`/actors/${encodeURIComponent(actorName)}/movies`);
+    const response = await api.get(`/persons/actors/${encodeURIComponent(actorName)}/movies`);
     return response.data;
   }
 };
