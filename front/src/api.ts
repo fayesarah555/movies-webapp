@@ -138,6 +138,42 @@ export interface RegisterData {
   role?: string;
 }
 
+export interface Watchlist {
+  id: string;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  created_at: string;
+  movie_count: number;
+  username: string;
+}
+
+export interface WatchlistDetail {
+  id: string;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  created_at: string;
+  username: string;
+  movies: Movie[];
+}
+
+export interface WatchlistCreate {
+  name: string;
+  description?: string;
+  is_public: boolean;
+}
+
+export interface WatchlistMovie {
+  movie_title: string;
+}
+
+export interface MovieInWatchlists {
+  movie_title: string;
+  in_watchlists: Array<{id: string; name: string}>;
+}
+
+
 // Fonctions API
 export const movieApi = {
   // Récupérer tous les films avec pagination
@@ -382,6 +418,63 @@ export const handleApiError = (error: any): string => {
   }
 };
 
+export const watchlistApi = {
+  // Créer une nouvelle watchlist
+  create: async (watchlistData: WatchlistCreate): Promise<Watchlist> => {
+    const response = await api.post('/watchlists', watchlistData);
+    return response.data;
+  },
+
+  // Récupérer toutes les watchlists de l'utilisateur
+  getUserWatchlists: async (): Promise<Watchlist[]> => {
+    const response = await api.get('/watchlists');
+    return response.data;
+  },
+
+  // Récupérer le détail d'une watchlist
+  getWatchlistDetail: async (watchlistId: string): Promise<WatchlistDetail> => {
+    const response = await api.get(`/watchlists/${watchlistId}`);
+    return response.data;
+  },
+
+  // Mettre à jour une watchlist
+  update: async (watchlistId: string, watchlistData: WatchlistCreate): Promise<ApiResponse<void>> => {
+    const response = await api.put(`/watchlists/${watchlistId}`, watchlistData);
+    return response.data;
+  },
+
+  // Supprimer une watchlist
+  delete: async (watchlistId: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/watchlists/${watchlistId}`);
+    return response.data;
+  },
+
+  // Ajouter un film à une watchlist
+  addMovie: async (watchlistId: string, movieTitle: string): Promise<ApiResponse<void>> => {
+    const response = await api.post(`/watchlists/${watchlistId}/movies`, { movie_title: movieTitle });
+    return response.data;
+  },
+
+  // Retirer un film d'une watchlist
+  removeMovie: async (watchlistId: string, movieTitle: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/watchlists/${watchlistId}/movies/${encodeURIComponent(movieTitle)}`);
+    return response.data;
+  },
+
+  // Récupérer les watchlists publiques
+  getPublicWatchlists: async (limit: number = 20, skip: number = 0): Promise<Watchlist[]> => {
+    const response = await api.get(`/watchlists/public/all?limit=${limit}&skip=${skip}`);
+    return response.data;
+  },
+
+  // Vérifier dans quelles watchlists se trouve un film
+  checkMovieInWatchlists: async (movieTitle: string): Promise<MovieInWatchlists> => {
+    const response = await api.get(`/watchlists/movie/${encodeURIComponent(movieTitle)}/check`);
+    return response.data;
+  },
+};
+
+
 // Hook personnalisé pour l'authentification
 export const useAuth = () => {
   const token = localStorage.getItem('token');
@@ -401,4 +494,88 @@ export const useAuth = () => {
   };
   
   return { isAuthenticated, isAdmin, user, login, logout };
+};
+
+
+import { useState } from 'react';
+
+export const useWatchlists = () => {
+  const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadWatchlists = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await watchlistApi.getUserWatchlists();
+      setWatchlists(data);
+    } catch (err) {
+      setError(handleApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createWatchlist = async (watchlistData: WatchlistCreate) => {
+    try {
+      setError(null);
+      const newWatchlist = await watchlistApi.create(watchlistData);
+      setWatchlists(prev => [newWatchlist, ...prev]);
+      return newWatchlist;
+    } catch (err) {
+      setError(handleApiError(err));
+      throw err;
+    }
+  };
+
+  const deleteWatchlist = async (watchlistId: string) => {
+    try {
+      setError(null);
+      await watchlistApi.delete(watchlistId);
+      setWatchlists(prev => prev.filter(w => w.id !== watchlistId));
+    } catch (err) {
+      setError(handleApiError(err));
+      throw err;
+    }
+  };
+
+  const addMovieToWatchlist = async (watchlistId: string, movieTitle: string) => {
+    try {
+      setError(null);
+      await watchlistApi.addMovie(watchlistId, movieTitle);
+      // Mettre à jour le compteur de films
+      setWatchlists(prev => prev.map(w => 
+        w.id === watchlistId ? { ...w, movie_count: w.movie_count + 1 } : w
+      ));
+    } catch (err) {
+      setError(handleApiError(err));
+      throw err;
+    }
+  };
+
+  const removeMovieFromWatchlist = async (watchlistId: string, movieTitle: string) => {
+    try {
+      setError(null);
+      await watchlistApi.removeMovie(watchlistId, movieTitle);
+      // Mettre à jour le compteur de films
+      setWatchlists(prev => prev.map(w => 
+        w.id === watchlistId ? { ...w, movie_count: Math.max(0, w.movie_count - 1) } : w
+      ));
+    } catch (err) {
+      setError(handleApiError(err));
+      throw err;
+    }
+  };
+
+  return {
+    watchlists,
+    loading,
+    error,
+    loadWatchlists,
+    createWatchlist,
+    deleteWatchlist,
+    addMovieToWatchlist,
+    removeMovieFromWatchlist,
+  };
 };

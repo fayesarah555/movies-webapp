@@ -14,6 +14,7 @@ from routes.reviews import router as reviews_router
 from routes.stats import router as stats_router
 from routes.users import login as users_login
 from routes.users import register as users_register
+from routes.watchlists import router as watchlists_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,6 +74,7 @@ app.include_router(persons_router, prefix="/persons", tags=["persons"])
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(reviews_router, prefix="/reviews", tags=["reviews"])
 app.include_router(stats_router, prefix="/stats", tags=["stats"])
+app.include_router(watchlists_router, prefix="/watchlists", tags=["watchlists"])
 
 # Correction FastAPI : redirection /movies vers /movies/
 @app.get("/movies", include_in_schema=False)
@@ -120,3 +122,7 @@ class UserRegisterProxy(BaseModel):
 @app.post("/register", include_in_schema=False)
 def proxy_register(user: UserRegisterProxy):
     return users_register(user)
+
+@app.get("/watchlists", include_in_schema=False)
+def redirect_watchlists():
+    return RedirectResponse(url="/watchlists/")
