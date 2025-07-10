@@ -39,7 +39,8 @@ try {
 
 # Démarrer le front-end Vite
 Write-Host "🎨 Démarrage du front-end..." -ForegroundColor Yellow
-Set-Location -Path "../front"
+Set-Location -Path "$PSScriptRoot/front"
+
 $frontProcess = Start-Process -FilePath "npm" -ArgumentList "run", "dev" -PassThru
 
 Write-Host "✅ Application démarrée avec succès!" -ForegroundColor Green
