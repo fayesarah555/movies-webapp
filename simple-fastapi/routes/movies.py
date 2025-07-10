@@ -98,7 +98,9 @@ def create_movie(movie_data: dict, username: str = Depends(verify_admin)):
         title = movie_data.get("title")
         released = movie_data.get("released")
         tagline = movie_data.get("tagline", "")
-        imageUrl = movie_data.get("imageUrl", "")
+        imageUrl = movie_data.get("imageUrl")
+        if not imageUrl:
+            imageUrl = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg"
         directors = movie_data.get("directors", [])
         producers = movie_data.get("producers", [])
         actors = movie_data.get("actors", [])

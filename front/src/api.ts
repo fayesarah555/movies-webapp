@@ -278,7 +278,7 @@ export const personApi = {
 export const collaborationApi = {
   // Obtenir les collaborations entre deux personnes
   getCollaborations: async (person1: string, person2: string): Promise<Collaboration> => {
-    const response = await api.get(`/collaborations?person1=${encodeURIComponent(person1)}&person2=${encodeURIComponent(person2)}`);
+    const response = await api.get(`/persons/collaborations?person1=${encodeURIComponent(person1)}&person2=${encodeURIComponent(person2)}`);
     return response.data;
   }
 };

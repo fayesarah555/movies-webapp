@@ -4,6 +4,7 @@ import { AccountCircle, Login, PersonAdd, ExitToApp } from '@mui/icons-material'
 import { motion } from 'framer-motion';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
+import { useAuth } from '../AuthContext';
 
 const AuthHeader: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,11 +13,11 @@ const AuthHeader: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { login, logout } = useAuth();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    
     if (token && user) {
       setIsAuthenticated(true);
       const userData = JSON.parse(user);
@@ -28,19 +29,19 @@ const AuthHeader: React.FC = () => {
   const handleLogin = (_token: string) => {
     setIsAuthenticated(true);
     setShowLogin(false);
-    
-    // Récupérer les informations utilisateur depuis le localStorage
     const user = localStorage.getItem('user');
     if (user) {
       const userData = JSON.parse(user);
       setUsername(userData.username);
       setUserRole(userData.role);
+      // Propager au contexte global
+      login(userData);
     }
   };
 
   const handleRegister = (_newUsername: string) => {
     setShowRegister(false);
-    setShowLogin(true); // Rediriger vers la connexion après inscription
+    setShowLogin(true);
   };
 
   const handleLogout = () => {
@@ -50,6 +51,8 @@ const AuthHeader: React.FC = () => {
     setUsername('');
     setUserRole('user');
     setAnchorEl(null);
+    // Propager au contexte global
+    logout();
   };
 
   const getRoleDisplay = (role: string) => {

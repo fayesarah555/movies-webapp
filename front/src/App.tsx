@@ -21,6 +21,7 @@ import { ProtectedRoute, PermissionGate } from './auth';
 import { useAuth } from './api';
 import type { Movie } from './api';
 import './App.css';
+import { AuthProvider } from './AuthContext';
 
 function App() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -74,7 +75,7 @@ function App() {
         <AppBar position="sticky" elevation={2}>
           <Toolbar>
             <Typography variant="h5" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-              🎬 Movies Database
+              🎬MovieRank
             </Typography>
             <Typography variant="subtitle1" sx={{ mr: 2, opacity: 0.8 }}>
               Interface de gestion des films avec Neo4j
@@ -209,4 +210,10 @@ function App() {
   );
 }
 
-export default App;
+const AppWithAuth = () => (
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+
+export default AppWithAuth;

@@ -354,6 +354,7 @@ const AdminPanel: React.FC = () => {
           onClose={handleCancelForm}
           maxWidth="md"
           fullWidth
+          disableEnforceFocus
           PaperProps={{
             sx: {
               borderRadius: 2,
@@ -361,6 +362,7 @@ const AdminPanel: React.FC = () => {
             }
           }}
         >
+          {console.log('MovieForm visible', showForm, editingMovie)}
           <MovieForm
             movie={editingMovie || undefined}
             onSubmit={handleSaveMovie}

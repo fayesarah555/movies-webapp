@@ -34,6 +34,20 @@ const MovieList: React.FC<MovieListProps> = ({ onMovieSelect }) => {
   const [hasMore, setHasMore] = useState(true);
   const pageSize = 12;
 
+  // Images de films par défaut (affiches HD TMDB, uniquement les liens de la dernière liste fournie)
+  const defaultMovieImages = [
+    'https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg', // Interstellar (2014)
+    'https://image.tmdb.org/t/p/original/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg', // Inception (2010)
+    'https://image.tmdb.org/t/p/original/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg', // Avatar: The Way of Water (2022)
+    'https://image.tmdb.org/t/p/original/sv1xJUazXeYqALzczSZ3O6nkH75.jpg', // Black Panther: Wakanda Forever
+    'https://image.tmdb.org/t/p/original/k68nPLbIST6NP96JmTxmZijEvCA.jpg', // Tenet (2020)
+    'https://image.tmdb.org/t/p/original/74xTEgt7R36Fpooo50r9T25onhq.jpg', // The Batman (2022)
+    'https://image.tmdb.org/t/p/original/8c4a8kE7PizaGQQnditMmI1xbRp.jpg', // The Matrix Resurrections (2021)
+    'https://image.tmdb.org/t/p/original/r2J02Z2OpNTctfOSN1Ydgii51I3.jpg', // Guardians of the Galaxy Vol. 3
+    'https://image.tmdb.org/t/p/original/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg', // Pulp Fiction (1994)
+    'https://image.tmdb.org/t/p/original/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg', // Gladiator (2000)
+  ];
+
   const loadMovies = async (page: number = 0, append: boolean = false) => {
     try {
       setLoading(true);
@@ -121,16 +135,15 @@ const MovieList: React.FC<MovieListProps> = ({ onMovieSelect }) => {
                 style={{ display: 'flex' }}
               >
                 <Card sx={{ width: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column', minHeight: 180 }}>
-                  {movie.imageUrl && (
-                    <Box sx={{ width: '100%', height: 180, overflow: 'hidden', borderTopLeftRadius: 8, borderTopRightRadius: 8, mb: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img
-                        src={movie.imageUrl}
-                        alt={movie.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}
-                        loading="lazy"
-                      />
-                    </Box>
-                  )}
+                  {/* Affichage image film : imageUrl ou image par défaut selon l'index */}
+                  <Box sx={{ width: '100%', height: 180, overflow: 'hidden', borderTopLeftRadius: 8, borderTopRightRadius: 8, mb: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img
+                      src={movie.imageUrl || defaultMovieImages[movies.indexOf(movie) % defaultMovieImages.length]}
+                      alt={movie.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderTopLeftRadius: 8, borderTopRightRadius: 8 }}
+                      loading="lazy"
+                    />
+                  </Box>
                   <CardContent>
                     <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', mb: 1 }}>
                       {movie.title}

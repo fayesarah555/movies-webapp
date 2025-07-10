@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { personApi, handleApiError } from '../api';
 import { PermissionGate } from '../auth';
 import type { Person } from '../api';
+import { Box, useTheme } from '@mui/material';
 
 // Fonction utilitaire pour extraire le titre d'un film
 const getMovieTitle = (movie: any): string => {
@@ -15,6 +16,7 @@ const getMovieTitle = (movie: any): string => {
 };
 
 const PersonPanel: React.FC = () => {
+  const theme = useTheme();
   const [persons, setPersons] = useState<Person[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,9 +186,28 @@ const PersonPanel: React.FC = () => {
   };
 
   return (
-    <div className="person-panel">
-      <div className="person-header">
-        <h2>🎭 Gestion des acteurs</h2>
+    <Box className="person-panel" sx={{
+      background: theme.palette.background.paper,
+      color: theme.palette.text.primary + ' !important',
+      borderRadius: 3,
+      p: 3,
+      mb: 3,
+      boxShadow: 2,
+      '& *': {
+        color: theme.palette.text.primary + ' !important',
+      },
+    }}>
+      <Box className="person-header" sx={{
+        background: theme.palette.background.default,
+        color: theme.palette.text.primary + ' !important',
+        borderRadius: 2,
+        p: 2,
+        mb: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <h2 style={{margin: 0}}>🎭 Gestion des acteurs</h2>
         <PermissionGate permission="admin">
           <button 
             onClick={() => setShowForm(true)}
@@ -195,10 +216,17 @@ const PersonPanel: React.FC = () => {
             ➕ Ajouter un acteur
           </button>
         </PermissionGate>
-      </div>
+      </Box>
 
       {showForm && (
-        <div className="person-form">
+        <Box className="person-form" sx={{
+          background: theme.palette.background.default,
+          color: theme.palette.text.primary,
+          borderRadius: 2,
+          p: 2,
+          mb: 2,
+          boxShadow: 1,
+        }}>
           <h3>{editingPerson ? 'Modifier acteur' : 'Nouvel acteur'}</h3>
           <form onSubmit={editingPerson ? handleUpdatePerson : handleCreatePerson}>
             <div className="form-group">
@@ -240,7 +268,7 @@ const PersonPanel: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
+        </Box>
       )}
 
       {error && !showForm && (
@@ -252,8 +280,20 @@ const PersonPanel: React.FC = () => {
         </div>
       )}
 
-      <div className="person-content">
-        <div className="person-list">
+      <Box className="person-content" sx={{
+        display: 'flex',
+        gap: 3,
+        mt: 2,
+        color: theme.palette.text.primary + ' !important',
+      }}>
+        <Box className="person-list" sx={{
+          flex: 1,
+          background: theme.palette.background.default,
+          color: theme.palette.text.primary + ' !important',
+          borderRadius: 2,
+          p: 2,
+          boxShadow: 1,
+        }}>
           <h3>Liste des acteurs ({persons.length})</h3>
           
           {loading && <div className="loading">Chargement...</div>}
@@ -299,10 +339,22 @@ const PersonPanel: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+        </Box>
         
         {selectedPerson && (
-          <div className="person-details">
+          <Box className="person-details" sx={{
+            flex: 1.2,
+            background: theme.palette.background.paper,
+            color: theme.palette.text.primary + ' !important',
+            borderRadius: 2,
+            p: 3,
+            boxShadow: 2,
+            ml: 2,
+            minWidth: 320,
+            '& *': {
+              color: theme.palette.text.primary + ' !important',
+            },
+          }}>
             <h3>Détails de {selectedPerson.name}</h3>
             
             <div className="person-info">
@@ -356,10 +408,10 @@ const PersonPanel: React.FC = () => {
             >
               Fermer
             </button>
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
